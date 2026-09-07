@@ -51,7 +51,10 @@ jobs:
               assert not path.is_absolute() and '..' not in path.parts and path.parts[0] == 'uno'
               assert not original.is_absolute() and '..' not in original.parts
               content = root.joinpath(*original.parts).read_bytes()
-              assert hashlib.sha256(content).hexdigest() == item['sha256'], item['source']
+              if 'sha256' in item:
+                  assert hashlib.sha256(content).hexdigest() == item['sha256'], item['source']
+              else:
+                  assert hashlib.sha1(b'blob ' + str(len(content)).encode() + b'\0' + content).hexdigest() == item['git_blob_sha'], item['source']
               destination = root.joinpath(*path.parts)
               destination.parent.mkdir(parents=True, exist_ok=True)
               destination.write_bytes(content)
@@ -107,14 +110,14 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $compiler = Get-ChildItem '${env:ProgramFiles(x86)}' -Filter ISCC.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          $compiler = @("${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe", "${env:ProgramFiles(x86)}\Inno Setup 7\ISCC.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
           if (!$compiler) {
             choco install innosetup --yes --no-progress
             if ($LASTEXITCODE) { throw 'Could not install Inno Setup' }
-            $compiler = Get-ChildItem "${env:ProgramFiles(x86)}" -Filter ISCC.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+            $compiler = (Get-ChildItem "${env:ProgramFiles(x86)}" -Filter ISCC.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
           }
           if (!$compiler) { throw 'Inno Setup compiler was not found' }
-          "ISCC=$($compiler.FullName)" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          "ISCC=$compiler" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
       - name: Compile and publish self-contained native app
         run: python uno/tools/build.py --rid ${{ matrix.rid }} --output native-build/${{ matrix.rid }}
       - name: Native kernel, GPU, window and operating-system input checks on Windows
@@ -123,6 +126,10 @@ jobs:
       - name: Native kernel, GPU, window and operating-system input checks on Linux
         if: runner.os == 'Linux'
         run: xvfb-run -a -s '-screen 0 1700x1100x24' python3 uno/tools/run_checks.py native-build/${{ matrix.rid }} --output native-verification/${{ matrix.rid }}
+      - name: Independently audit native DXF exports
+        run: |
+          python -m pip install -r uno/requirements-test.txt
+          python uno/tools/dxf_audit.py native-verification/${{ matrix.rid }}
       - name: Package Windows portable app, installer and source
         if: runner.os == 'Windows'
         run: python uno/tools/package.py native-build/${{ matrix.rid }} --rid ${{ matrix.rid }} --output native-packages/${{ matrix.rid }} --source
