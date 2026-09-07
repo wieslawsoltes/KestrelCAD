@@ -1,0 +1,104 @@
+name: Deploy Kestrel CAD to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Test and build the static application
+        run: |
+          mkdir -p examples tests/results
+          node tests/core.test.js
+          python3 tests/server.test.py
+          python3 tools/build.py
+          python3 tools/update_manifest.py
+          python3 tools/stage_site.py
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure Pages
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
+      - name: Check out source for live-site verification
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Verify the published commit, assets, and download
+        env:
+          SITE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          python3 - <<'PY'
+          import hashlib, io, json, os, pathlib, time, urllib.request, zipfile
+          root = pathlib.Path.cwd()
+          site = os.environ['SITE_URL'].rstrip('/') + '/'
+          sha = os.environ['GITHUB_SHA']
+          def read(path):
+              request = urllib.request.Request(site + path + '?v=' + sha, headers={'User-Agent': 'KestrelCAD-deployment-check'})
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  assert response.status == 200, (path, response.status)
+                  return response.read()
+          for attempt in range(20):
+              try:
+                  deployment = json.loads(read('deployment.json'))
+                  assert deployment['commit'] == sha, deployment
+                  break
+              except Exception:
+                  if attempt == 19:
+                      raise
+                  time.sleep(3)
+          files = [root / 'index.html', *sorted((root / 'src').glob('*')), root / 'tests/webgpu.html', root / 'tests/gpu.test.js']
+          for path in files:
+              if not path.is_file():
+                  continue
+              relative = path.relative_to(root).as_posix()
+              assert hashlib.sha256(read(relative)).digest() == hashlib.sha256(path.read_bytes()).digest(), relative
+          package = read('Kestrel-CAD.zip')
+          assert hashlib.sha256(package).hexdigest() == deployment['package_sha256']
+          with zipfile.ZipFile(io.BytesIO(package)) as archive:
+              assert archive.testzip() is None, 'Corrupt downloadable package'
+              assert 'Kestrel-CAD/src/renderer.js' in archive.namelist()
+              assert 'Kestrel-CAD/Kestrel-CAD.html' in archive.namelist()
+          assert b'Kestrel' in read('Kestrel-CAD.html')
+          print(f'Verified live site: {site}')
+          print(f'Published commit: {sha}')
+          print(f'All {len(files)} checked assets match source; complete download checksum verified.')
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write(f'## Kestrel CAD is live\n\n[Open editor]({site})\n\nCommit: `{sha}`\n\nPublic assets and source download verified.\n')
+          PY
+      - name: Install browser verification dependencies
+        run: |
+          python3 -m pip install -r requirements-dev.txt
+          python3 -m playwright install --with-deps chromium
+          python3 -c "from playwright.sync_api import sync_playwright; p = sync_playwright().start(); print('CHROMIUM_PATH=' + p.chromium.executable_path); p.stop()" >> "$GITHUB_ENV"
+      - name: Exercise the live editor
+        env:
+          KESTREL_TEST_URL: ${{ steps.deployment.outputs.page_url }}
+        run: python3 tests/browser.test.py
