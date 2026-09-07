@@ -1,0 +1,73 @@
+name: Verify and import Kestrel CAD 2.0
+
+on:
+  push:
+    branches: [feature/production-drafting-v2]
+    paths: ['.import/manifest.json']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: import-kestrel-v2
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out the release branch
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Verify source package, baseline blobs and reconstructed files
+        run: |
+          python3 - <<'PY'
+          import base64, hashlib, io, json, lzma, pathlib, subprocess, zipfile
+          root = pathlib.Path.cwd()
+          manifest = json.loads((root / '.import/manifest.json').read_text())
+          assert manifest['version'] == '2.0.0'
+          encoded = ''.join((root / '.import' / name).read_text().strip() for name in manifest['parts'])
+          compressed = base64.b64decode(encoded, validate=True)
+          assert hashlib.sha256(compressed).hexdigest() == manifest['sha256'], 'Package checksum mismatch'
+          def safe(name):
+              path = pathlib.PurePosixPath(name)
+              assert not path.is_absolute() and '..' not in path.parts, name
+              assert path.parts[0] not in ('.git', '.github', '.import'), name
+              return root.joinpath(*path.parts)
+          for name, expected in manifest['base_blobs'].items():
+              actual = subprocess.check_output(['git', 'hash-object', str(safe(name))], text=True).strip()
+              assert actual == expected, f'Baseline changed: {name}: {actual} != {expected}'
+          with zipfile.ZipFile(io.BytesIO(lzma.decompress(compressed))) as archive:
+              assert set(archive.namelist()) == set(manifest['full_files']) | {'changes.patch'}
+              for name in manifest['full_files']:
+                  data = archive.read(name)
+                  assert hashlib.sha256(data).hexdigest() == manifest['files'][name], name
+                  target = safe(name)
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  target.write_bytes(data)
+              patch = archive.read('changes.patch')
+              assert hashlib.sha256(patch).hexdigest() == manifest['patch_sha256']
+              (root / '.import/changes.patch').write_bytes(patch)
+          subprocess.run(['git', 'apply', '--check', '.import/changes.patch'], check=True)
+          subprocess.run(['git', 'apply', '--whitespace=nowarn', '.import/changes.patch'], check=True)
+          for name, expected in manifest['files'].items():
+              assert hashlib.sha256(safe(name).read_bytes()).hexdigest() == expected, name
+          print(f"Verified {len(manifest['files'])} changed/new source files against their expected hashes.")
+          PY
+      - name: Install test-only dependencies
+        run: |
+          python3 -m pip install -r requirements-dev.txt
+          python3 -m playwright install --with-deps chromium
+          python3 -c "from playwright.sync_api import sync_playwright; p = sync_playwright().start(); print('CHROMIUM_PATH=' + p.chromium.executable_path); p.stop()" >> "$GITHUB_ENV"
+      - name: Run every release suite and regenerate examples and previews
+        run: python3 tools/verify.py --previews
+      - name: Commit the verified application to the release branch
+        run: |
+          rm -rf .import
+          chmod +x start.sh
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --all
+          git commit -m "feat: add production drafting, reusable blocks, linked annotations, references and scaled layouts"
+          git push origin HEAD:feature/production-drafting-v2
+          echo "Verified application commit: $(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
