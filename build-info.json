@@ -1,33 +1,21 @@
 {
   "application": "Kestrel CAD",
-  "built_utc": "2026-09-07T19:45:22.570723+00:00",
+  "built_utc": "2026-09-07T21:51:50.507779+00:00",
   "tests": {
-    "browser-results": {
-      "passed": 51,
-      "failed": 0
-    },
-    "core-results": {
+    "core": {
       "passed": 59,
       "failed": 0
     },
-    "dxf-interop-results": {
-      "passed": 10,
+    "browser": {
+      "passed": 51,
       "failed": 0
     },
-    "production-browser-results": {
-      "passed": 16,
-      "failed": 0
-    },
-    "production-interop-results": {
-      "passed": 8,
-      "failed": 0
-    },
-    "production-results": {
-      "passed": 58,
-      "failed": 0
-    },
-    "server-results": {
+    "server": {
       "passed": 13,
+      "failed": 0
+    },
+    "dxf-interop": {
+      "passed": 10,
       "failed": 0
     }
   },
