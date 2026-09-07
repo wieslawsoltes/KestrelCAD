@@ -18,7 +18,8 @@ MAX_TOPOLOGY = 20000
 MAX_MESH = 500000
 OPERATIONS = ('box', 'cylinder', 'cone', 'sphere', 'torus', 'extrude', 'revolve',
               'loft', 'sweep', 'union', 'subtract', 'intersect', 'fillet', 'chamfer',
-              'shell', 'section', 'transform', 'import', 'export', 'inspect')
+              'shell', 'section', 'transform', 'import', 'export', 'inspect',
+              'slice', 'separate', 'plane-surface', 'extract-faces', 'thicken', 'massprops')
 
 
 def num(x, label='number', lo=-1e8, hi=1e8):
@@ -178,6 +179,85 @@ def pack(shape, tolerance):
             'solidCount': len(solids), 'valid': True, 'tolerance': tolerance}
 
 
+def mass_properties(shape, density=1):
+    """Integrate the transformed B-rep, not its viewport triangulation.
+
+    Mass assumes uniform density. Inertia is about the centroid in world axes.
+    Overlapping solids are additive; callers must union them to remove overlap.
+    """
+    from OCP.GProp import GProp_GProps
+    from OCP.BRepGProp import BRepGProp
+    checked(shape)
+    if not shape.Solids():
+        raise ValueError('Volumetric mass properties require at least one closed solid.')
+    density = positive(density, 'uniform density')
+    props = GProp_GProps()
+    for solid in shape.Solids():
+        if not solid.Shells() or any(not shell.Closed() for shell in solid.Shells()):
+            raise ValueError('Mass properties require closed solids.')
+        component = GProp_GProps()
+        BRepGProp.VolumeProperties_s(solid.wrapped, component, True, False, False)
+        if component.Mass() <= 0:
+            raise ValueError('A body has nonpositive oriented volume.')
+        props.Add(component, density)
+    tensor, principal = props.MatrixOfInertia(), props.PrincipalProperties()
+    bounds = shape.BoundingBox()
+    return {'density': density, 'volume': props.Mass()/density, 'mass': props.Mass(),
+            'area': shape.Area(), 'centroid': list(props.CentreOfMass().Coord()),
+            'inertia': [[tensor.Value(i,j) for j in (1,2,3)] for i in (1,2,3)],
+            'principalMoments': list(principal.Moments()),
+            'principalAxes': [list(a.Coord()) for a in (principal.FirstAxisOfInertia(),
+                principal.SecondAxisOfInertia(), principal.ThirdAxisOfInertia())],
+            'bounds': {'min': [bounds.xmin,bounds.ymin,bounds.zmin],
+                       'max': [bounds.xmax,bounds.ymax,bounds.zmax]},
+            'solidCount': len(shape.Solids()), 'inertiaReference': 'centroid, world axes',
+            'overlapPolicy': 'additive; union overlapping bodies first'}
+
+
+def pack_many(items, tolerance):
+    """All results are validated before a single atomic client transaction."""
+    if not items or len(items) > 64:
+        raise ValueError('Multi-body operation requires 1–64 results.')
+    bodies = [dict(pack(shape, tolerance), sourceIndex=index, **extra)
+              for index, shape, extra in items]
+    if sum(len(b['mesh']['vertices']) for b in bodies) > MAX_MESH:
+        raise ValueError('Combined result exceeds the display vertex limit.')
+    result = {'bodies': bodies}
+    if len(json.dumps(result)) > 48*1024*1024:
+        raise ValueError('Combined native result exceeds the 48 MiB response limit.')
+    return result
+
+
+def slice_body(source, origin, normal, keep):
+    """Intersect with analytic infinite half-spaces, with no bounding-box cutters."""
+    import cadquery as cq
+    from OCP.BRepBuilderAPI import BRepBuilderAPI_MakeFace
+    from OCP.BRepPrimAPI import BRepPrimAPI_MakeHalfSpace
+    from OCP.gp import gp_Pln, gp_Pnt, gp_Dir
+    o, n = vector(origin, 'plane origin'), vector(normal, 'plane normal')
+    norm = math.sqrt(sum(v*v for v in n))
+    if norm < 1e-12:
+        raise ValueError('Slicing plane needs a nonzero normal.')
+    if keep not in ('positive', 'negative', 'both'):
+        raise ValueError('Choose the positive side, negative side, or both sides.')
+    n = tuple(v/norm for v in n)
+    face = cq.Face(BRepBuilderAPI_MakeFace(gp_Pln(gp_Pnt(*o), gp_Dir(*n))).Face())
+    if not source.Faces():
+        raise ValueError('Slice requires a native solid or surface, not section wires.')
+    out = []
+    for side, sign in [('positive',1), ('negative',-1)]:
+        point = gp_Pnt(*(o[i] + sign*n[i] for i in range(3)))
+        halfspace = cq.Solid(BRepPrimAPI_MakeHalfSpace(face.wrapped, point).Solid())
+        part = source.intersect(halfspace).clean()
+        pieces = part.Solids() if source.Solids() else part.Faces()
+        if pieces:
+            checked(part)
+            out.append((side, part))
+    if len(out) != 2:
+        raise ValueError('The plane must cross the body interior; tangency alone is not a slice.')
+    return [(side, part) for side, part in out if keep == 'both' or keep == side]
+
+
 def execute(request):
     import cadquery as cq
     if not isinstance(request, dict) or request.get('op') not in OPERATIONS:
@@ -196,7 +276,42 @@ def execute(request):
         return shapes[0]
     def profile():
         return wire(p.get('profile'))
-    if op == 'box':
+    if op == 'massprops':
+        if not shapes or any(not s.Solids() for s in shapes):
+            raise ValueError('Select native closed solids for mass properties.')
+        shape = cq.Compound.makeCompound(shapes)
+        return mass_properties(shape, p.get('density', 1))
+    if op == 'slice':
+        if not shapes:
+            raise ValueError('Select native solids or surfaces to slice.')
+        origin, normal, keep = p.get('origin', [0,0,0]), p.get('normal', [0,0,1]), p.get('keep', 'both')
+        return pack_many([(i, part, {'side':side}) for i, shape in enumerate(shapes)
+                          for side, part in slice_body(shape, origin, normal, keep)], tolerance)
+    if op == 'separate':
+        source = one()
+        solids = source.Solids()
+        if len(solids) < 2:
+            raise ValueError('Separate requires a composite body with multiple solids.')
+        return pack_many([(0, solid, {}) for solid in solids], tolerance)
+    if op == 'extract-faces':
+        source = one()
+        return pack_many([(0, f, {}) for f in selection(source, p.get('faces'), 'faces')], tolerance)
+    if op == 'plane-surface':
+        holes = p.get('holes', [])
+        if not isinstance(holes, list) or len(holes) > 64:
+            raise ValueError('At most 64 inner profiles are allowed.')
+        shape = cq.Face.makeFromWires(profile(), [wire(h) for h in holes])
+    elif op == 'thicken':
+        source = one()
+        if source.Solids() or len(source.Faces()) != 1:
+            raise ValueError('Thicken requires one native face; extract a face from a body first.')
+        thickness = num(p.get('thickness'), 'thickness', -1e7, 1e7)
+        if abs(thickness) < 1e-6:
+            raise ValueError('Thickness must be nonzero.')
+        shape = source.Faces()[0].thicken(thickness)
+        if not shape.Solids():
+            raise ValueError('The offset did not create a closed solid.')
+    elif op == 'box':
         shape = cq.Solid.makeBox(positive(p.get('width')), positive(p.get('depth')), positive(p.get('height')))
     elif op == 'cylinder':
         shape = cq.Solid.makeCylinder(positive(p.get('radius')), positive(p.get('height')))
@@ -290,7 +405,10 @@ def execute(request):
             path = Path(tmp)/('input.'+fmt)
             path.write_bytes(data)
             if fmt == 'step':
-                shape = cq.importers.importStep(str(path)).val()
+                roots = cq.importers.importStep(str(path)).vals()
+                if not roots:
+                    raise ValueError('STEP contains no transferred shapes.')
+                shape = roots[0] if len(roots) == 1 else cq.Compound.makeCompound(roots)
             elif fmt == 'brep':
                 shape = cq.Shape.importBrep(str(path))
             else:
