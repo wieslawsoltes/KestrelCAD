@@ -41,6 +41,14 @@ DIMLINEAR measures projected X/Y distance rather than aligned length. Selected l
 
 LAYOUT stores paper dimensions in millimeters and viewport scale denominators. PLOT downloads an SVG with physical page dimensions or opens a print preview. This is top-view output, not complete paper-space CAD editing. Browser print settings must use actual size/100% scale. See the [review](docs/V2-REVIEW.md) for command-by-command boundaries and known gaps.
 
+## Parametric sketching
+
+The **Parametric** ribbon adds named expressions and maintained planar geometric/dimensional constraints. `PARAMDEMO` creates a fully constrained rectangle: edit `Width` in **Parameters**, and `Height = Width * 0.6` follows. Constraint bars show the stored relationships; `SHOWCONSTRAINTS` toggles them.
+
+`GEOMCONSTRAINT` supports horizontal/vertical, coincident, signed X/Y and true distance, fixed point/entity, parallel/perpendicular/collinear, equal length/radius, concentric, radius/diameter, signed angle, tangent, point-on-line/circle, midpoint and symmetry. Use `CONSTRAINTS` to edit, suppress or delete equations, `PARAMETERS` for dependent expressions, `SOLVE` for numerical rank/remaining degrees of freedom, and `CONSTRAINTMODE` to suspend or re-enable solving. Edits solve atomically and roll back on nonconvergence. Ordinary undo, native save/load, unit conversion and compatible clipboard transfers retain the system.
+
+This is a bounded **planar nonlinear solver**, not a 3D assembly or general NURBS constraint engine. One saved plane per drawing; lines, straight polylines, points, circles and arcs; 160 free scalar variables and 256 constraint records. Numerical rank is local, not a global proof. Parameter length units remain explicit during physical unit conversion. Equations persist in `.kcad`; ordinary DXF exchange contains evaluated geometry, not the native constraint graph. See [sketch constraints](docs/PARAMETRIC.md).
+
 ## Native B-rep modeling
 
 The **Solids** ribbon adds an optional local **OpenCascade** kernel through CadQuery. It is not ACIS and does not read/write SAT or SAB. Install the pinned optional engine in a Python 3.11+ environment:

@@ -108,6 +108,7 @@
             if (!point(c.target) || !Number.isFinite(c.zoom) || c.zoom <= 0 || !Number.isFinite(c.yaw) || !Number.isFinite(c.pitch))
                 throw Error('Invalid saved camera.');
         }
+        if (!definition && K.Constraints) K.Constraints.validate(data);
         if (vertices > 3000000)
             throw Error('Project vertex limit exceeded (3 million).');
         if (!['mm', 'cm', 'm', 'in', 'ft', 'unitless'].includes(data.units))
@@ -124,7 +125,7 @@
         selected(editable = false) { return [...this.selection].map(id => this.byId.get(id)).filter(e => e && (!editable || this.editable(e))); }
         entity(type, props = {}) { return { id: uid(), type, layer: this.currentLayer, color: 'bylayer', linetype: 'ByLayer', ...props }; }
         add(type, props = {}) { const e = typeof type === 'object' ? { id: uid(), layer: this.currentLayer, color: 'bylayer', linetype: 'ByLayer', ...type } : this.entity(type, props); this.entities.push(e); this.byId.set(e.id, e); return e; }
-        remove(ids) { const s = new Set(ids); this.entities = this.entities.filter(e => !s.has(e.id)); for (const id of s)
+        remove(ids) { const s = new Set(ids); K.Constraints?.removeReferences(this, [...s]); this.entities = this.entities.filter(e => !s.has(e.id)); for (const id of s)
             this.selection.delete(id); this.reindex(); }
         replace(id, e) { const i = this.entities.findIndex(x => x.id === id); if (i >= 0) {
             this.entities[i] = { ...e, id };
@@ -136,10 +137,11 @@
         } return g; }
         serialize() { return { format: 'kestrel-cad', version: 2, production: K.clone(this.production || K.Production?.defaults() || null), name: this.name, units: this.units, currentLayer: this.currentLayer, layers: clone(this.layers), entities: clone(this.entities), camera: this.camera }; }
         snapshot() { return JSON.stringify(this.serialize()); }
-        apply(data) { const d = validate(clone(data)); this.production = d.production || K.Production?.defaults() || null; this.name = d.name || 'Untitled'; this.units = d.units; this.entities = d.entities; this.layers = d.layers; this.currentLayer = d.currentLayer || this.layers[0].id; this.camera = d.camera; this.cache = new WeakMap(); this.reindex(); }
+        apply(data) { const d = validate(clone(data)); delete this.constraintReport; this.production = d.production || K.Production?.defaults() || null; this.name = d.name || 'Untitled'; this.units = d.units; this.entities = d.entities; this.layers = d.layers; this.currentLayer = d.currentLayer || this.layers[0].id; this.camera = d.camera; this.cache = new WeakMap(); this.reindex(); }
         transaction(label, fn) { const before = this.snapshot(); try {
             fn();
             this.reindex();
+            if (K.Constraints) K.Constraints.enforce(this);
             if (K.Production) { K.Production.associations(this); K.validateProject(this.serialize()); }
             const after = this.snapshot();
             if (before === after)
