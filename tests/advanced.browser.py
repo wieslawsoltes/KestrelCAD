@@ -23,6 +23,8 @@ try:
             try:fn();assert len(errors)==before,errors[before:];results.append({'name':name,'status':'passed'});print('PASS',name,flush=True)
             except Exception as e:traceback.print_exc();results.append({'name':name,'status':'failed','error':str(e)});page.evaluate('kestrel.closeDialog();kestrel.cancel(false)')
         def action(x):page.evaluate('(id)=>kestrel.run(id)',x)
+        # Undo intentionally clears selection; each independent operation reselects its body.
+        def select_body():page.evaluate('kestrel.doc.selection = new Set([kestrel.doc.entities[0].id]); kestrel.selectionChanged()')
         def submit(fields={}):
             for key,value in fields.items():
                 el=page.locator('#modal [name="'+key+'"]')
@@ -36,21 +38,21 @@ try:
             assert page.evaluate('kestrel.doc.entities[0].solid.provider')=='OCCT'
         test('Solids ribbon creates a real B-rep box through localhost',box)
         def fillet():
-            action('solid-fillet');submit({'indices':'0','size':2});assert page.evaluate('kestrel.doc.entities[0].solid.faces.length')==7
+            select_body();action('solid-fillet');submit({'indices':'0','size':2});assert page.evaluate('kestrel.doc.entities[0].solid.faces.length')==7
             action('undo');assert page.evaluate('kestrel.doc.entities[0].solid.faces.length')==6
         test('native fillet dialog edits topology with atomic undo',fillet)
-        def chamfer():action('solid-chamfer');submit({'indices':'0','size':2});assert abs(page.evaluate('kestrel.doc.entities[0].solid.volume')-5980)<1e-5;action('undo')
+        def chamfer():select_body();action('solid-chamfer');submit({'indices':'0','size':2});assert abs(page.evaluate('kestrel.doc.entities[0].solid.volume')-5980)<1e-5;action('undo')
         test('native chamfer runs the actual kernel',chamfer)
-        def shell():action('solid-shell');submit({'indices':'5','size':-1});assert abs(page.evaluate('kestrel.doc.entities[0].solid.volume')-1464)<1e-5;action('undo')
+        def shell():select_body();action('solid-shell');submit({'indices':'5','size':-1});assert abs(page.evaluate('kestrel.doc.entities[0].solid.volume')-1464)<1e-5;action('undo')
         test('native shell removes selected face and hollows body',shell)
         def step():
-            action('solid-export')
+            select_body();action('solid-export')
             with page.expect_download() as download:submit({'format':'step'})
             data=Path(download.value.path()).read_bytes();assert b'ISO-10303-21' in data;assert len(data)>1000
         test('STEP export downloads actual solid exchange data',step)
         def persist():assert page.evaluate('Kestrel.Drawing.from(kestrel.doc.serialize()).entities[0].solid.brep===kestrel.doc.entities[0].solid.brep')
         test('native solid project persistence',persist)
-        def detach():action('solid-detach');submit();assert page.evaluate('!kestrel.doc.entities[0].solid');action('undo');assert page.evaluate('!!kestrel.doc.entities[0].solid')
+        def detach():select_body();action('solid-detach');submit();assert page.evaluate('!kestrel.doc.entities[0].solid');action('undo');assert page.evaluate('!!kestrel.doc.entities[0].solid')
         test('explicit mesh conversion and undo',detach)
         def security():
             assert page.request.post(url+'api/kernel',data={'op':'box'}).status==403
