@@ -15,16 +15,18 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - name: Check out source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - name: Test and build the static application
+      - name: Install verification dependencies
         run: |
-          mkdir -p examples tests/results
-          node tests/core.test.js
-          python3 tests/server.test.py
-          python3 tools/build.py
+          python3 -m pip install -r requirements-dev.txt -r requirements-kernel.txt
+          python3 -m playwright install --with-deps chromium
+          python3 -c "from playwright.sync_api import sync_playwright; p = sync_playwright().start(); print('CHROMIUM_PATH=' + p.chromium.executable_path); p.stop()" >> "$GITHUB_ENV"
+      - name: Verify every suite before publishing
+        run: |
+          python3 tools/verify.py --previews
           python3 tools/update_manifest.py
           python3 tools/stage_site.py
       - name: Upload Pages artifact
