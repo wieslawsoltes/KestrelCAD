@@ -30,6 +30,7 @@ jobs:
           compressed = base64.b64decode(encoded, validate=True)
           assert hashlib.sha256(compressed).hexdigest() == manifest['sha256'], 'Package checksum mismatch'
           with zipfile.ZipFile(io.BytesIO(lzma.decompress(compressed))) as archive:
+              assert len(archive.infolist()) == len(manifest['files']), 'File count mismatch'
               for entry in archive.infolist():
                   path = pathlib.PurePosixPath(entry.filename)
                   assert not path.is_absolute() and '..' not in path.parts, entry.filename
@@ -56,6 +57,7 @@ jobs:
           python3 tests/dxf_interop.py
           python3 tools/capture_previews.py
           chmod +x start.sh
+          python3 tools/update_manifest.py
       - name: Commit the verified application
         run: |
           rm -rf .import
