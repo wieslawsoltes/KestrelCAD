@@ -1,0 +1,28 @@
+name: Verify CAD changes
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out the proposed source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Install test-only dependencies
+        run: |
+          python3 -m pip install -r requirements-dev.txt
+          if [ -f requirements-kernel.txt ]; then python3 -m pip install -r requirements-kernel.txt; fi
+          python3 -m playwright install --with-deps chromium
+          python3 -c "from playwright.sync_api import sync_playwright; p = sync_playwright().start(); print('CHROMIUM_PATH=' + p.chromium.executable_path); p.stop()" >> "$GITHUB_ENV"
+      - name: Test the current source and build the standalone editor
+        run: python3 tools/verify.py --previews
