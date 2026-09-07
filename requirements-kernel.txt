@@ -1,0 +1,2 @@
+# Optional local B-rep engine. The browser application has no runtime JS dependency.
+cadquery==2.8.0

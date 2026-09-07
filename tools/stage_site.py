@@ -9,7 +9,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / '_site'
-EXCLUDED = {'.git', '.import', '_site', '__pycache__', '.venv'}
+EXCLUDED = {'.git', '.import', '.transfer', '_site', '__pycache__', '.venv'}
 
 
 def main() -> None:
@@ -20,7 +20,7 @@ def main() -> None:
     OUT.mkdir()
     for name in ('index.html', 'Kestrel-CAD.html', 'README.md', 'VERIFICATION.md', 'LICENSE', '.nojekyll'):
         shutil.copy2(ROOT / name, OUT / name)
-    for name in ('src', 'examples', 'previews'):
+    for name in ('src', 'examples', 'previews', 'docs'):
         shutil.copytree(ROOT / name, OUT / name)
     (OUT / 'tests').mkdir()
     for name in ('webgpu.html', 'gpu.test.js'):

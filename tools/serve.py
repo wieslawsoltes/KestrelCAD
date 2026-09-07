@@ -8,6 +8,8 @@ Only trusted local drawings should be passed to an external native codec.
 from __future__ import annotations
 
 import argparse
+import importlib.util
+import sys
 import json
 import os
 from pathlib import Path
@@ -38,6 +40,8 @@ def capabilities() -> dict:
     return {
         'application': 'Kestrel CAD bridge', 'version': '1.0.0',
         'dwgRead': bool(read), 'dwgWrite': bool(write),
+        'brep': bool(importlib.util.find_spec('cadquery')),
+        'brepProvider': 'OpenCascade via CadQuery (not ACIS)',
         'reason': ('Separate local converters detected; interoperability still depends on codec and DXF entity support.'
                    if read or write else 'GNU LibreDWG converters were not found on PATH. DXF and native project files work without them.'),
         'limits': {'inputBytes': MAX_BYTES, 'outputBytes': MAX_BYTES, 'timeoutSeconds': 60},
@@ -114,6 +118,9 @@ class Handler(SimpleHTTPRequestHandler):
     def do_POST(self):
         if not self.local_request(post=True):
             return
+        if urlsplit(self.path).path == '/api/kernel':
+            self.native_worker('kernel.py')
+            return
         routes = {
             '/api/convert/dwg-to-dxf': ('dwg2dxf', '.dwg', '.dxf', 'application/dxf'),
             '/api/convert/dxf-to-dwg': ('dxf2dwg', '.dxf', '.dwg', 'application/octet-stream'),
@@ -183,6 +190,53 @@ class Handler(SimpleHTTPRequestHandler):
             self.json_response(504, {'error': 'The local codec exceeded the 60-second conversion limit.'})
         except (OSError, ValueError) as error:
             self.json_response(422, {'error': str(error)[:3500]})
+        finally:
+            CONVERT_LOCK.release()
+
+
+    def native_worker(self, script):
+        """Execute one allowlisted native task in a disposable, bounded subprocess."""
+        if script not in ('kernel.py', 'font_engine.py'):
+            self.json_response(404, {'error': 'Unknown worker.'})
+            return
+        if self.headers.get('Transfer-Encoding') or self.headers.get('Content-Type', '').split(';')[0] != 'application/json':
+            self.json_response(400, {'error': 'A length-delimited JSON request is required.'})
+            return
+        try:
+            length = int(self.headers.get('Content-Length', '-1'))
+        except ValueError:
+            length = -1
+        if not 1 <= length <= MAX_BYTES:
+            self.json_response(413, {'error': 'Request size must be between 1 byte and 64 MiB.'})
+            return
+        if not CONVERT_LOCK.acquire(blocking=False):
+            self.json_response(429, {'error': 'Another native operation is running.'})
+            return
+        try:
+            self.connection.settimeout(20)
+            content = self.rfile.read(length)
+            if len(content) != length:
+                raise ValueError('Incomplete request body.')
+            # Parsing here rejects malformed input before starting expensive native imports.
+            if not isinstance(json.loads(content), dict):
+                raise ValueError('Expected a structured request object.')
+            with tempfile.TemporaryDirectory(prefix='kestrel-native-') as tmp:
+                with (Path(tmp)/'result.json').open('w+b') as output, (Path(tmp)/'worker.log').open('w+b') as log:
+                    result = subprocess.run([sys.executable, str(ROOT/'tools'/script)], input=content,
+                                            stdout=output, stderr=log, cwd=tmp, timeout=60,
+                                            check=False, shell=False)
+                    output.seek(0, os.SEEK_END)
+                    if output.tell() > MAX_BYTES:
+                        raise ValueError('Native result exceeds 64 MiB.')
+                    output.seek(0)
+                    if result.returncode:
+                        raise ValueError('Native worker failed. The drawing was not modified.')
+                    response = json.load(output)
+            self.json_response(422 if 'error' in response else 200, response)
+        except subprocess.TimeoutExpired:
+            self.json_response(504, {'error': 'Native operation exceeded the 60-second time limit.'})
+        except (OSError, ValueError) as error:
+            self.json_response(422, {'error': str(error)[:2000]})
         finally:
             CONVERT_LOCK.release()
 

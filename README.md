@@ -41,6 +41,21 @@ DIMLINEAR measures projected X/Y distance rather than aligned length. Selected l
 
 LAYOUT stores paper dimensions in millimeters and viewport scale denominators. PLOT downloads an SVG with physical page dimensions or opens a print preview. This is top-view output, not complete paper-space CAD editing. Browser print settings must use actual size/100% scale. See the [review](docs/V2-REVIEW.md) for command-by-command boundaries and known gaps.
 
+## Native B-rep modeling
+
+The **Solids** ribbon adds an optional local **OpenCascade** kernel through CadQuery. It is not ACIS and does not read/write SAT or SAB. Install the pinned optional engine in a Python 3.11+ environment:
+
+```sh
+python3 -m pip install -r requirements-kernel.txt
+python3 tools/serve.py --open
+```
+
+Native box, cylinder, cone, sphere, torus, extrude (including inner wires), revolve, loft, sweep, union/subtract/intersect, solid-edge fillet/chamfer, shell, section, affine transformation, and STEP/IGES/BREP exchange operate on real B-rep topology. Analytic curves/surfaces are retained separately from the display triangulation. Invalid results are rejected before committing an undoable drawing change. Existing approximate meshes are **not** silently upgraded to exact solids.
+
+Projects retain native BREP bytes and transformations; the display mesh remains viewable on GitHub Pages without installing the engine. Native computation, inspection, and exchange require the local server. SOLIDINFO reports native topology and mass properties. Edge/face operations use numerical indices from the **current** topology; there is no persistent topological naming across topology-changing features. SOLIDDETACH explicitly converts a native object to a plain editable mesh; undo restores it.
+
+STEP/IGES exchange uses millimeters with explicit drawing-unit conversion. IGES may import as surfaces rather than sewn solids. STL is explicitly tessellated. Native interoperability uses OCCT numerical tolerances, not symbolic arithmetic or a guarantee for arbitrary industrial files. See [native modeling details](docs/NATIVE-SOLIDS.md).
+
 ## Modeling and fidelity
 
 The baseline 3D tools create **polygon meshes**: primitives, extrude/revolve, BSP mesh union/subtract/intersect and section lines. These are not ACIS solids or exact analytic models. Mesh Boolean degeneracies and non-manifold results remain possible; check exported parts independently before manufacturing.
@@ -54,12 +69,12 @@ PNG captures the viewport. SVG supports vector output and physical layout pages.
 ## Tests and build
 
 ```sh
-python3 -m pip install -r requirements-dev.txt
+python3 -m pip install -r requirements-dev.txt -r requirements-kernel.txt
 python3 -m playwright install chromium
 python3 tools/verify.py --previews
 ```
 
-Set `CHROMIUM_PATH` when Chromium is not at `/usr/bin/chromium`. Set `KESTREL_TEST_URL=http://localhost:8000/` to test a served application; otherwise browser tests load the standalone HTML. Tests include original core/browser/server checks, production object and UI checks, and independent ezdxf audits. Test dependencies are not application runtime dependencies.
+Set `CHROMIUM_PATH` when Chromium is not at `/usr/bin/chromium`. Set `KESTREL_TEST_URL=http://localhost:8000/` to test a served application; otherwise browser tests load the standalone HTML. Tests include original core/browser/server checks, production object and UI checks, and independent ezdxf audits. Playwright is test-only. CadQuery is an optional local modeling dependency; it is never downloaded by the running browser. The native browser suite exercises the actual localhost worker and requires normal localhost navigation.
 
 Fresh results are written to `tests/results/`. `build-info.json` is generated after verification; the source test scripts are authoritative, not stale documentation counts. The WebGPU validation page is `tests/webgpu.html`; hardware execution is separate from Canvas browser interaction tests.
 
