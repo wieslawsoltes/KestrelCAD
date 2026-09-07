@@ -98,7 +98,7 @@ class Handler(SimpleHTTPRequestHandler):
         else:
             # Disallow symbolic links escaping the package directory.
             translated = Path(self.translate_path(self.path)).resolve()
-            if not translated.is_relative_to(ROOT):
+            if not translated.is_relative_to(ROOT) or any(part.startswith('.') for part in translated.relative_to(ROOT).parts):
                 self.send_error(403, 'Path outside application root')
                 return
             super().do_GET()
@@ -106,7 +106,7 @@ class Handler(SimpleHTTPRequestHandler):
     def do_HEAD(self):
         if self.local_request():
             translated = Path(self.translate_path(self.path)).resolve()
-            if not translated.is_relative_to(ROOT):
+            if not translated.is_relative_to(ROOT) or any(part.startswith('.') for part in translated.relative_to(ROOT).parts):
                 self.send_error(403)
             else:
                 super().do_HEAD()
@@ -147,6 +147,7 @@ class Handler(SimpleHTTPRequestHandler):
         if not CONVERT_LOCK.acquire(blocking=False):
             self.json_response(429, {'error': 'Another local conversion is running.'})
             return
+        status, response = 200, None
         try:
             self.connection.settimeout(20)
             content = self.rfile.read(length)
@@ -180,18 +181,23 @@ class Handler(SimpleHTTPRequestHandler):
                     raise ValueError('Converter output is not a recognized DWG file.')
                 if output_ext == '.dxf' and b'SECTION' not in data[:4096]:
                     raise ValueError('Converter did not produce an ASCII DXF file.')
-                self.send_response(200)
-                self.send_header('Content-Type', mime)
-                self.send_header('Content-Length', str(len(data)))
-                self.send_header('Content-Disposition', f'attachment; filename="converted{output_ext}"')
-                self.end_headers()
-                self.wfile.write(data)
         except subprocess.TimeoutExpired:
-            self.json_response(504, {'error': 'The local codec exceeded the 60-second conversion limit.'})
+            status, response = 504, {'error': 'The local codec exceeded the 60-second conversion limit.'}
         except (OSError, ValueError) as error:
-            self.json_response(422, {'error': str(error)[:3500]})
+            status, response = 422, {'error': str(error)[:3500]}
         finally:
             CONVERT_LOCK.release()
+        # A completed response guarantees the native operation slot is free.
+        # Slow clients cannot hold the conversion lock while receiving output.
+        if response is not None:
+            self.json_response(status, response)
+        else:
+            self.send_response(200)
+            self.send_header('Content-Type', mime)
+            self.send_header('Content-Length', str(len(data)))
+            self.send_header('Content-Disposition', f'attachment; filename="converted{output_ext}"')
+            self.end_headers()
+            self.wfile.write(data)
 
 
     def native_worker(self, script):
@@ -212,6 +218,7 @@ class Handler(SimpleHTTPRequestHandler):
         if not CONVERT_LOCK.acquire(blocking=False):
             self.json_response(429, {'error': 'Another native operation is running.'})
             return
+        status, response = 200, None
         try:
             self.connection.settimeout(20)
             content = self.rfile.read(length)
@@ -232,13 +239,16 @@ class Handler(SimpleHTTPRequestHandler):
                     if result.returncode:
                         raise ValueError('Native worker failed. The drawing was not modified.')
                     response = json.load(output)
-            self.json_response(422 if 'error' in response else 200, response)
+            if not isinstance(response, dict) or not ('result' in response or 'error' in response):
+                raise ValueError('Invalid native worker response.')
+            status = 422 if 'error' in response else 200
         except subprocess.TimeoutExpired:
-            self.json_response(504, {'error': 'Native operation exceeded the 60-second time limit.'})
+            status, response = 504, {'error': 'Native operation exceeded the 60-second time limit.'}
         except (OSError, ValueError) as error:
-            self.json_response(422, {'error': str(error)[:2000]})
+            status, response = 422, {'error': str(error)[:2000]}
         finally:
             CONVERT_LOCK.release()
+        self.json_response(status, response)
 
 
 def main():

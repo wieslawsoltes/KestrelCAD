@@ -7,7 +7,7 @@
   "diagnostics": {
     "application": "Kestrel CAD",
     "version": "1.0.0",
-    "timestamp": "2026-09-07T21:51:07.810Z",
+    "timestamp": "2026-09-07T19:45:16.580Z",
     "backend": "Canvas 2D",
     "adapter": null,
     "fallbackReason": "WebGPU requires localhost or HTTPS.",
@@ -28,7 +28,7 @@
     "render": {
       "segments": 2397,
       "triangles": 7090,
-      "cpuMs": 65.39999999990687,
+      "cpuMs": 60.60000000000582,
       "drawCalls": 0,
       "entities": 36,
       "style": "shaded-edges",

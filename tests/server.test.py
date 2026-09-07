@@ -123,8 +123,41 @@ def timeout_handling():
     assert bridge.CONVERT_LOCK.acquire(blocking=False), 'Conversion lock not released'
     bridge.CONVERT_LOCK.release()
 
+def native_protocol():
+    headers = {'X-Kestrel-Client':'1', 'Content-Type':'application/json'}
+    def fake_run(args, **kwargs):
+        eq(Path(args[1]).name, 'kernel.py')
+        eq(kwargs['shell'], False)
+        eq(kwargs['timeout'], 60)
+        kwargs['stdout'].write(b'{"result":{"verifiedProtocol":true}}')
+        return subprocess.CompletedProcess(args, 0)
+    with patch.object(bridge.subprocess, 'run', side_effect=fake_run):
+        for _ in range(15):
+            status, body, _ = request('/api/kernel', 'POST', b'{"op":"inspect"}', headers)
+            eq(status, 200)
+            assert json.loads(body)['result']['verifiedProtocol']
+            assert bridge.CONVERT_LOCK.acquire(blocking=False)
+            bridge.CONVERT_LOCK.release()
+    with patch.object(bridge.subprocess, 'run', side_effect=subprocess.TimeoutExpired('mock', 60)):
+        eq(request('/api/kernel', 'POST', b'{"op":"inspect"}', headers)[0], 504)
+        assert bridge.CONVERT_LOCK.acquire(blocking=False)
+        bridge.CONVERT_LOCK.release()
+    eq(request('/api/kernel', 'POST', b'not json', headers)[0], 422)
+    eq(request('/api/kernel', 'POST', b'[]', headers)[0], 422)
+    eq(request('/api/kernel', 'POST', b'{}', {'X-Kestrel-Client':'1'})[0], 400)
+    with bridge.CONVERT_LOCK:
+        eq(request('/api/kernel', 'POST', b'{}', headers)[0], 429)
+
+def no_internal_files():
+    eq(request('/.git/config')[0], 403)
+    eq(request('/%2egit/config')[0], 403)
+    eq(request('/.github/workflows/verify.yml', 'HEAD')[0], 403)
+    eq(request('/.transfer/manifest.json')[0], 403)
+
 try:
     test('HTTP serves the actual application with security headers', static_app)
+    test('Internal repository and transfer files are not served', no_internal_files)
+    test('MOCKED native protocol releases slot before returning and rejects malformed requests', native_protocol)
     test('HTTP serves JavaScript and the hardware validation page', lambda: (eq(request('/src/renderer.js')[0], 200), eq(request('/tests/webgpu.html')[0], 200)))
     test('Missing converters are honestly reported by capabilities and conversion API', codec_missing)
     test('Unrecognized Host header is rejected', lambda: eq(request(headers={'Host':'external.example'})[0], 403))
