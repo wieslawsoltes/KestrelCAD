@@ -1,0 +1,155 @@
+name: Build Kestrel CAD Uno native packages
+
+on:
+  push:
+    branches: [uno-progpu-port, main]
+    paths: ['uno/**', '.uno-import/manifest.json', '.github/workflows/uno-native.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: uno-native-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    outputs:
+      commit: ${{ steps.source.outputs.commit }}
+      ready: ${{ steps.source.outputs.ready }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Verify source import when present
+        id: source
+        shell: bash
+        run: |
+          if test -f .uno-import/manifest.json; then
+            python3 - <<'PY'
+          import hashlib, io, json, lzma, pathlib, zipfile
+          root = pathlib.Path.cwd()
+          manifest = json.loads((root / '.uno-import/manifest.json').read_text())
+          data = b''.join((root / '.uno-import' / name).read_bytes() for name in manifest['parts'])
+          assert hashlib.sha256(data).hexdigest() == manifest['sha256'], 'Source archive checksum mismatch'
+          with zipfile.ZipFile(io.BytesIO(lzma.decompress(data))) as archive:
+              assert set(archive.namelist()) == set(manifest['files'])
+              for entry in archive.infolist():
+                  path = pathlib.PurePosixPath(entry.filename)
+                  assert not path.is_absolute() and '..' not in path.parts and path.parts[0] == 'uno'
+                  content = archive.read(entry)
+                  assert hashlib.sha256(content).hexdigest() == manifest['files'][entry.filename], entry.filename
+                  target = root.joinpath(*path.parts)
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  target.write_bytes(content)
+          for target, item in manifest.get('copies', {}).items():
+              path = pathlib.PurePosixPath(target)
+              original = pathlib.PurePosixPath(item['source'])
+              assert not path.is_absolute() and '..' not in path.parts and path.parts[0] == 'uno'
+              assert not original.is_absolute() and '..' not in original.parts
+              content = root.joinpath(*original.parts).read_bytes()
+              assert hashlib.sha256(content).hexdigest() == item['sha256'], item['source']
+              destination = root.joinpath(*path.parts)
+              destination.parent.mkdir(parents=True, exist_ok=True)
+              destination.write_bytes(content)
+          print('Verified native source and unchanged original kernel.')
+          PY
+            rm -rf .uno-import
+            rm -f .github/workflows/uno-inspect.yml .github/workflows/uno-bootstrap.yml .github/workflows/uno-offline-export.yml .github/workflows/uno-gpu-validation-env.yml
+            chmod +x uno/build.sh uno/tools/*.py
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add --all uno .uno-import .github/workflows
+            git commit -m 'feat: port Kestrel CAD to native Uno controls and ProGPU WebGPU'
+            git push origin HEAD:${GITHUB_REF_NAME}
+          fi
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          if test -f uno/KestrelCAD.App/KestrelCAD.App.csproj; then
+            echo 'ready=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'ready=false' >> "$GITHUB_OUTPUT"
+            echo 'Native source import has not been staged yet.'
+          fi
+
+  desktop:
+    needs: source
+    if: needs.source.outputs.ready == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+          - os: ubuntu-latest
+            rid: linux-x64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    env:
+      SOURCE_COMMIT: ${{ needs.source.outputs.commit }}
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ needs.source.outputs.commit }}
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1
+        with:
+          dotnet-version: '10.0.400'
+      - name: Install Linux validation tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb xdotool mesa-vulkan-drivers libvulkan1 libfontconfig1 libfreetype6 libx11-6 libxext6 libxrandr2 libxcursor1 libxi6 libxkbcommon0
+      - name: Locate Windows installer compiler
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $compiler = Get-ChildItem '${env:ProgramFiles(x86)}' -Filter ISCC.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (!$compiler) {
+            choco install innosetup --yes --no-progress
+            if ($LASTEXITCODE) { throw 'Could not install Inno Setup' }
+            $compiler = Get-ChildItem "${env:ProgramFiles(x86)}" -Filter ISCC.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          }
+          if (!$compiler) { throw 'Inno Setup compiler was not found' }
+          "ISCC=$($compiler.FullName)" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Compile and publish self-contained native app
+        run: python uno/tools/build.py --rid ${{ matrix.rid }} --output native-build/${{ matrix.rid }}
+      - name: Native kernel, GPU, window and operating-system input checks on Windows
+        if: runner.os == 'Windows'
+        run: python uno/tools/run_checks.py native-build/${{ matrix.rid }} --output native-verification/${{ matrix.rid }}
+      - name: Native kernel, GPU, window and operating-system input checks on Linux
+        if: runner.os == 'Linux'
+        run: xvfb-run -a -s '-screen 0 1700x1100x24' python3 uno/tools/run_checks.py native-build/${{ matrix.rid }} --output native-verification/${{ matrix.rid }}
+      - name: Package Windows portable app, installer and source
+        if: runner.os == 'Windows'
+        run: python uno/tools/package.py native-build/${{ matrix.rid }} --rid ${{ matrix.rid }} --output native-packages/${{ matrix.rid }} --source
+      - name: Package Linux app and source
+        if: runner.os == 'Linux'
+        run: python3 uno/tools/package.py native-build/${{ matrix.rid }} --rid ${{ matrix.rid }} --output native-packages/${{ matrix.rid }} --source
+      - name: Install, run the installed editor and uninstall
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          ./uno/tools/test_installer.ps1 -Installer "$PWD/native-packages/win-x64/KestrelCAD-Uno-0.2.0-win-x64-setup.exe" -Output "$PWD/native-verification/win-x64/installer"
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: KestrelCAD-Uno-${{ matrix.rid }}-packages
+          path: native-packages/${{ matrix.rid }}/
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 90
+      - name: Upload verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: KestrelCAD-Uno-${{ matrix.rid }}-verification
+          path: |
+            native-verification/${{ matrix.rid }}/
+            native-build/${{ matrix.rid }}/app/build-info.json
+            native-build/${{ matrix.rid }}/app/dependency-manifest.json
+          retention-days: 90
+          if-no-files-found: warn
