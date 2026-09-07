@@ -15,10 +15,10 @@
         { id: 'hatch', name: 'A-HATCH', color: '#687d91', visible: true, locked: false, linetype: 'Continuous', lineweight: .13 },
         { id: 'construction', name: 'A-CENTER', color: '#c69a66', visible: true, locked: false, linetype: 'Center', lineweight: .13 }
     ];
-    const TYPES = new Set(['LINE', 'POLYLINE', 'CIRCLE', 'ARC', 'ELLIPSE', 'SPLINE', 'HATCH', 'POINT', 'TEXT', 'DIMENSION', 'MESH']);
-    function validate(data) {
-        if (!data || typeof data !== 'object' || data.format !== 'kestrel-cad' || data.version !== 1)
-            throw Error('This is not a supported Kestrel CAD project (version 1).');
+    const TYPES = new Set(['LINE', 'POLYLINE', 'CIRCLE', 'ARC', 'ELLIPSE', 'SPLINE', 'HATCH', 'POINT', 'TEXT', 'DIMENSION', 'MESH', 'INSERT', 'TABLE', 'LEADER']);
+    function validate(data, definition = false) {
+        if (!data || typeof data !== 'object' || data.format !== 'kestrel-cad' || ![1, 2].includes(data.version))
+            throw Error('This is not a supported Kestrel CAD project (version 1 or 2).');
         if (!Array.isArray(data.entities) || data.entities.length > 200000)
             throw Error('Project entity limit exceeded (200,000).');
         if (!Array.isArray(data.layers) || !data.layers.length || data.layers.length > 2048)
@@ -38,9 +38,11 @@
             l.locked = !!l.locked;
             l.lineweight = Number.isFinite(l.lineweight) ? Math.max(.01, Math.min(5, l.lineweight)) : .25;
         }
+        if (!definition && K.Production) K.Production.validate(data);
         let vertices = 0;
         const point = p => Array.isArray(p) && p.length >= 2 && p.length <= 3 && p.every(x => Number.isFinite(x) && Math.abs(x) <= 1e12);
         for (const e of data.entities) {
+            if (K.Production) K.Production.validateEntity(e);
             if (!TYPES.has(e.type))
                 throw Error('Unsupported native entity: ' + e.type);
             if (!e.id)
@@ -114,7 +116,7 @@
     }
     class Drawing {
         constructor(name = 'Untitled') { this.id = uid('doc'); this.name = name; this.entities = []; this.layers = defaultLayers(); this.units = 'mm'; this.currentLayer = 'architecture'; this.selection = new Set(); this.revision = 0; this.undoStack = []; this.redoStack = []; this.dirty = false; this.camera = null; this.onChange = () => { }; this.cache = new WeakMap(); this.reindex(); }
-        reindex() { this.byId = new Map(this.entities.map(e => [e.id, e])); this.layerMap = new Map(this.layers.map(l => [l.id, l])); if (!this.layerMap.has(this.currentLayer))
+        reindex() { if (K.Production) K.Production.bind(this); this.byId = new Map(this.entities.map(e => [e.id, e])); this.layerMap = new Map(this.layers.map(l => [l.id, l])); if (!this.layerMap.has(this.currentLayer))
             this.currentLayer = this.layers[0].id; this.selection = new Set([...this.selection].filter(id => this.byId.has(id))); }
         layer(e) { return this.layerMap.get(typeof e === 'string' ? e : e.layer) || this.layers[0]; }
         visible(e) { return this.layer(e).visible && !e.hidden; }
@@ -132,12 +134,13 @@
             g = K.Geo.geometry(e, .25);
             this.cache.set(e, g);
         } return g; }
-        serialize() { return { format: 'kestrel-cad', version: 1, name: this.name, units: this.units, currentLayer: this.currentLayer, layers: clone(this.layers), entities: clone(this.entities), camera: this.camera }; }
+        serialize() { return { format: 'kestrel-cad', version: 2, production: K.clone(this.production || K.Production?.defaults() || null), name: this.name, units: this.units, currentLayer: this.currentLayer, layers: clone(this.layers), entities: clone(this.entities), camera: this.camera }; }
         snapshot() { return JSON.stringify(this.serialize()); }
-        apply(data) { const d = validate(clone(data)); this.name = d.name || 'Untitled'; this.units = d.units; this.entities = d.entities; this.layers = d.layers; this.currentLayer = d.currentLayer || this.layers[0].id; this.camera = d.camera; this.cache = new WeakMap(); this.reindex(); }
+        apply(data) { const d = validate(clone(data)); this.production = d.production || K.Production?.defaults() || null; this.name = d.name || 'Untitled'; this.units = d.units; this.entities = d.entities; this.layers = d.layers; this.currentLayer = d.currentLayer || this.layers[0].id; this.camera = d.camera; this.cache = new WeakMap(); this.reindex(); }
         transaction(label, fn) { const before = this.snapshot(); try {
             fn();
             this.reindex();
+            if (K.Production) { K.Production.associations(this); K.validateProject(this.serialize()); }
             const after = this.snapshot();
             if (before === after)
                 return false;
@@ -152,7 +155,7 @@
             this.apply(JSON.parse(before));
             throw error;
         } }
-        changed(label = 'Edit') { this.revision++; this.dirty = true; this.onChange(label); }
+        changed(label = 'Edit') { this.cache = new WeakMap(); this.revision++; this.dirty = true; this.onChange(label); }
         undo() { const item = this.undoStack.pop(); if (!item)
             return null; this.redoStack.push({ label: item.label, state: this.snapshot() }); this.apply(JSON.parse(item.state)); this.changed('Undo ' + item.label); return item.label; }
         redo() { const item = this.redoStack.pop(); if (!item)

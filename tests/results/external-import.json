@@ -1,7 +1,8 @@
 {
   "data": {
     "format": "kestrel-cad",
-    "version": 1,
+    "version": 2,
+    "production": null,
     "name": "Imported drawing",
     "units": "mm",
     "currentLayer": "0",
@@ -16,7 +17,7 @@
         "lineweight": 0.25
       },
       {
-        "id": "layer_mtqz5tvj_607",
+        "id": "layer_mtrngmx2_60s",
         "name": "Defpoints",
         "color": "#dce4ed",
         "visible": true,
@@ -25,7 +26,7 @@
         "lineweight": 0.25
       },
       {
-        "id": "layer_mtqz5tvj_608",
+        "id": "layer_mtrngmx2_60t",
         "name": "EXTERNAL",
         "color": "#74c58b",
         "visible": true,
@@ -34,7 +35,7 @@
         "lineweight": 0.25
       },
       {
-        "id": "layer_mtqz5tvj_609",
+        "id": "layer_mtrngmx2_60u",
         "name": "OCS-CIRCLE",
         "color": "#74c58b",
         "visible": true,
@@ -43,7 +44,7 @@
         "lineweight": 0.25
       },
       {
-        "id": "layer_mtqz5tvj_60a",
+        "id": "layer_mtrngmx2_60v",
         "name": "BLOCK-3D",
         "color": "#74c58b",
         "visible": true,
@@ -52,7 +53,7 @@
         "lineweight": 0.25
       },
       {
-        "id": "layer_mtqz5tvj_60b",
+        "id": "layer_mtrngmx2_60w",
         "name": "ARRAY-SCALED",
         "color": "#74c58b",
         "visible": true,
@@ -61,7 +62,7 @@
         "lineweight": 0.25
       },
       {
-        "id": "layer_mtqz5tvj_60c",
+        "id": "layer_mtrngmx2_60x",
         "name": "OCS-POLYLINE",
         "color": "#74c58b",
         "visible": true,
@@ -70,7 +71,7 @@
         "lineweight": 0.25
       },
       {
-        "id": "layer_mtqz5tvj_60d",
+        "id": "layer_mtrngmx2_60y",
         "name": "MTEXT-DIRECTION",
         "color": "#74c58b",
         "visible": true,
@@ -81,8 +82,8 @@
     ],
     "entities": [
       {
-        "id": "e_mtqz5tvj_60e",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx2_617",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "90",
@@ -101,8 +102,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvj_60f",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx2_618",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "91",
@@ -121,8 +122,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvj_60g",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx2_619",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "92",
@@ -141,8 +142,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvj_60h",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx2_61a",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "93",
@@ -161,8 +162,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvj_60i",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx2_61b",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "94",
@@ -181,8 +182,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvj_60j",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx2_61c",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "95",
@@ -201,8 +202,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvj_60k",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx2_61d",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "96",
@@ -221,8 +222,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvj_60l",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx2_61e",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "97",
@@ -241,8 +242,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvj_60m",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx2_61f",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "98",
@@ -261,8 +262,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvj_60n",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx2_61g",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "99",
@@ -281,8 +282,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvj_60o",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx2_61h",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "9A",
@@ -301,8 +302,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvj_60p",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx2_61i",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "9B",
@@ -321,8 +322,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvj_60q",
-        "layer": "layer_mtqz5tvj_609",
+        "id": "e_mtrngmx2_61j",
+        "layer": "layer_mtrngmx2_60u",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "9C",
@@ -340,8 +341,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvk_60r",
-        "layer": "layer_mtqz5tvj_60c",
+        "id": "e_mtrngmx2_61k",
+        "layer": "layer_mtrngmx2_60x",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "9D",
@@ -376,8 +377,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvk_60s",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx2_61l",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "9E",
@@ -418,8 +419,8 @@
         "closed": false
       },
       {
-        "id": "e_mtqz5tvk_60t",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx2_61m",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "9F",
@@ -458,8 +459,8 @@
         "closed": false
       },
       {
-        "id": "e_mtqz5tvk_60u",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx2_61n",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "A0",
@@ -480,8 +481,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvk_60v",
-        "layer": "layer_mtqz5tvj_60d",
+        "id": "e_mtrngmx2_61o",
+        "layer": "layer_mtrngmx2_60y",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "A1",
@@ -507,8 +508,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvk_60w",
-        "layer": "layer_mtqz5tvj_60a",
+        "id": "e_mtrngmx3_61p",
+        "layer": "layer_mtrngmx2_60v",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "A5",
@@ -527,8 +528,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvk_60x",
-        "layer": "layer_mtqz5tvj_60a",
+        "id": "e_mtrngmx3_61q",
+        "layer": "layer_mtrngmx2_60v",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "A6",
@@ -558,8 +559,8 @@
         "ry": 4
       },
       {
-        "id": "e_mtqz5tvk_60y",
-        "layer": "layer_mtqz5tvj_60b",
+        "id": "e_mtrngmx3_61r",
+        "layer": "layer_mtrngmx2_60w",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "A5",
@@ -578,8 +579,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvk_60z",
-        "layer": "layer_mtqz5tvj_60b",
+        "id": "e_mtrngmx3_61s",
+        "layer": "layer_mtrngmx2_60w",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "A6",
@@ -609,8 +610,8 @@
         "ry": 6
       },
       {
-        "id": "e_mtqz5tvl_610",
-        "layer": "layer_mtqz5tvj_60b",
+        "id": "e_mtrngmx3_61t",
+        "layer": "layer_mtrngmx2_60w",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "A5",
@@ -629,8 +630,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvl_611",
-        "layer": "layer_mtqz5tvj_60b",
+        "id": "e_mtrngmx3_61u",
+        "layer": "layer_mtrngmx2_60w",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "A6",
@@ -660,8 +661,8 @@
         "ry": 6
       },
       {
-        "id": "e_mtqz5tvl_612",
-        "layer": "layer_mtqz5tvj_60b",
+        "id": "e_mtrngmx3_61v",
+        "layer": "layer_mtrngmx2_60w",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "A5",
@@ -680,8 +681,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvl_613",
-        "layer": "layer_mtqz5tvj_60b",
+        "id": "e_mtrngmx3_61w",
+        "layer": "layer_mtrngmx2_60w",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "A6",
@@ -711,8 +712,8 @@
         "ry": 6
       },
       {
-        "id": "e_mtqz5tvl_614",
-        "layer": "layer_mtqz5tvj_60b",
+        "id": "e_mtrngmx3_61x",
+        "layer": "layer_mtrngmx2_60w",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "A5",
@@ -731,8 +732,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvl_615",
-        "layer": "layer_mtqz5tvj_60b",
+        "id": "e_mtrngmx3_61y",
+        "layer": "layer_mtrngmx2_60w",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "A6",
@@ -762,8 +763,8 @@
         "ry": 6
       },
       {
-        "id": "e_mtqz5tvl_616",
-        "layer": "layer_mtqz5tvj_60b",
+        "id": "e_mtrngmx3_61z",
+        "layer": "layer_mtrngmx2_60w",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "A5",
@@ -782,8 +783,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvl_617",
-        "layer": "layer_mtqz5tvj_60b",
+        "id": "e_mtrngmx3_620",
+        "layer": "layer_mtrngmx2_60w",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "A6",
@@ -813,8 +814,8 @@
         "ry": 6
       },
       {
-        "id": "e_mtqz5tvl_618",
-        "layer": "layer_mtqz5tvj_60b",
+        "id": "e_mtrngmx3_621",
+        "layer": "layer_mtrngmx2_60w",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "A5",
@@ -833,8 +834,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvl_619",
-        "layer": "layer_mtqz5tvj_60b",
+        "id": "e_mtrngmx3_622",
+        "layer": "layer_mtrngmx2_60w",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "A6",
@@ -864,8 +865,8 @@
         "ry": 6
       },
       {
-        "id": "e_mtqz5tvl_61a",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx3_623",
+        "layer": "layer_mtrngmx2_60t",
         "color": "#dce4ed",
         "linetype": "ByLayer",
         "sourceHandle": "AB",
@@ -902,8 +903,8 @@
         "spacing": 6.350000000092523
       },
       {
-        "id": "e_mtqz5tvl_61b",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx3_624",
+        "layer": "layer_mtrngmx2_60t",
         "color": "#698ee6",
         "linetype": "ByLayer",
         "sourceHandle": "AC",
@@ -1035,8 +1036,8 @@
         "spacing": 3.175
       },
       {
-        "id": "e_mtqz5tvm_61c",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx4_625",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "AD",
@@ -1090,8 +1091,8 @@
         "primitive": "Polyface mesh"
       },
       {
-        "id": "e_mtqz5tvm_61d",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx4_626",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "BD",
@@ -1110,8 +1111,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvm_61e",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx4_627",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "BE",
@@ -1130,8 +1131,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvm_61f",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx4_628",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "BYBLOCK",
         "sourceHandle": "77",
@@ -1160,8 +1161,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvm_61g",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx4_629",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "BYBLOCK",
         "sourceHandle": "77",
@@ -1190,8 +1191,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvm_61h",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx4_62a",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "C3",
@@ -1210,8 +1211,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvm_61i",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx4_62b",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "C4",
@@ -1232,8 +1233,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvm_61j",
-        "layer": "layer_mtqz5tvj_607",
+        "id": "e_mtrngmx4_62c",
+        "layer": "layer_mtrngmx2_60s",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "C5",
@@ -1245,8 +1246,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvm_61k",
-        "layer": "layer_mtqz5tvj_607",
+        "id": "e_mtrngmx4_62d",
+        "layer": "layer_mtrngmx2_60s",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "C6",
@@ -1258,8 +1259,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvm_61l",
-        "layer": "layer_mtqz5tvj_607",
+        "id": "e_mtrngmx4_62e",
+        "layer": "layer_mtrngmx2_60s",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "C7",
@@ -1271,8 +1272,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvm_61m",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx4_62f",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "CC",
@@ -1291,8 +1292,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvm_61n",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx4_62g",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "CD",
@@ -1311,8 +1312,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvm_61o",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx4_62h",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "BYBLOCK",
         "sourceHandle": "77",
@@ -1341,8 +1342,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvm_61p",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx4_62i",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "BYBLOCK",
         "sourceHandle": "77",
@@ -1371,8 +1372,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvm_61q",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx4_62j",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "D2",
@@ -1391,8 +1392,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvm_61r",
-        "layer": "layer_mtqz5tvj_608",
+        "id": "e_mtrngmx4_62k",
+        "layer": "layer_mtrngmx2_60t",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "D3",
@@ -1413,8 +1414,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvm_61s",
-        "layer": "layer_mtqz5tvj_607",
+        "id": "e_mtrngmx4_62l",
+        "layer": "layer_mtrngmx2_60s",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "D4",
@@ -1426,8 +1427,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvm_61t",
-        "layer": "layer_mtqz5tvj_607",
+        "id": "e_mtrngmx4_62m",
+        "layer": "layer_mtrngmx2_60s",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "D5",
@@ -1439,8 +1440,8 @@
         ]
       },
       {
-        "id": "e_mtqz5tvm_61u",
-        "layer": "layer_mtqz5tvj_607",
+        "id": "e_mtrngmx4_62n",
+        "layer": "layer_mtrngmx2_60s",
         "color": "bylayer",
         "linetype": "ByLayer",
         "sourceHandle": "D6",

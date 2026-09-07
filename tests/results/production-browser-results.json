@@ -1,0 +1,72 @@
+{
+  "suite": "production browser interactions",
+  "passed": 16,
+  "failed": 0,
+  "javascript_errors": [],
+  "tests": [
+    {
+      "name": "block creation and insertion through dialogs",
+      "status": "passed"
+    },
+    {
+      "name": "BEDIT and BCLOSE update shared definition instances",
+      "status": "passed"
+    },
+    {
+      "name": "attribute authoring and instance value editing",
+      "status": "passed"
+    },
+    {
+      "name": "clipboard copies referenced definitions across drawings",
+      "status": "passed"
+    },
+    {
+      "name": "block explode and undo restore reference identity",
+      "status": "passed"
+    },
+    {
+      "name": "DIMLINEAR and associative updates do not use aligned distance",
+      "status": "passed"
+    },
+    {
+      "name": "radial and angular dimensions through dialogs",
+      "status": "passed"
+    },
+    {
+      "name": "editable table creation, cell editing and undo",
+      "status": "passed"
+    },
+    {
+      "name": "island hatch authoring and filled geometry",
+      "status": "passed"
+    },
+    {
+      "name": "stretch dialog edits crossing vertices",
+      "status": "passed"
+    },
+    {
+      "name": "break dialog produces editable remainders",
+      "status": "passed"
+    },
+    {
+      "name": "alignment rotates actual geometry into 3D",
+      "status": "passed"
+    },
+    {
+      "name": "UCS line and circle coordinate input uses the actual plane",
+      "status": "passed"
+    },
+    {
+      "name": "layout dialog and scaled SVG download",
+      "status": "passed"
+    },
+    {
+      "name": "layout native persistence",
+      "status": "passed"
+    },
+    {
+      "name": "worker round trip preserves actual BLOCK and INSERT",
+      "status": "passed"
+    }
+  ]
+}
