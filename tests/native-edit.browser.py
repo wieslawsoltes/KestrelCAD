@@ -22,7 +22,7 @@ try:
                 el=page.locator('#modal [name="'+key+'"]')
                 if el.evaluate('(e)=>e.tagName')=='SELECT':el.select_option(str(value))
                 else:el.fill(str(value))
-            page.locator('#modal-submit').click();page.wait_for_function('!document.querySelector("#modal").open || document.querySelector("#modal-error").textContent.length>0')
+            page.locator('#modal-submit').click();page.wait_for_function('!document.querySelector("#modal").open || !document.querySelector("#modal-error").hidden')
             assert not page.locator('#modal-error').is_visible(),page.locator('#modal-error').inner_text()
         def test(name,fn):
             before=len(errors)
@@ -43,7 +43,7 @@ try:
         test('Slice ribbon command keeps both halves, properties, persistence and atomic undo',slicing)
         def failure():
             select();action('solid-slice');page.locator('#modal [name="origin"]').fill('1000,0,0');page.locator('#modal [name="normal"]').fill('1,0,0');page.locator('#modal-submit').click()
-            page.wait_for_function('document.querySelector("#modal-error").textContent.length>0')
+            page.wait_for_function('!document.querySelector("#modal-error").hidden')
             assert page.evaluate('kestrel.doc.entities.length')==1;assert page.evaluate('kestrel.doc.entities[0].solid.volume')==6000
             page.evaluate('kestrel.closeDialog()')
         test('failed native slice leaves the complete original body intact',failure)
@@ -69,7 +69,7 @@ try:
         test('closed circle to native planar surface to analytic solid workflow',surface)
         def stale():
             select(1);action('solid-slice');page.evaluate("kestrel.doc.transaction('other edit',()=>kestrel.doc.add('POINT',{position:[40,0,0]}))")
-            page.locator('#modal-submit').click();page.wait_for_function('document.querySelector("#modal-error").textContent.length>0')
+            page.locator('#modal-submit').click();page.wait_for_function('!document.querySelector("#modal-error").hidden')
             assert 'changed' in page.locator('#modal-error').inner_text().lower();assert page.evaluate('kestrel.doc.entities.length')==3
             page.evaluate('kestrel.closeDialog()')
         test('native dialog rejects stale topology instead of overwriting a newer edit',stale)
