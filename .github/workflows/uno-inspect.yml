@@ -1,0 +1,42 @@
+name: Inspect Uno ProGPU toolchain
+on:
+  push:
+    branches: [uno-progpu-port]
+    paths: ['.github/workflows/uno-inspect.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+      - name: Inspect current packages and template
+        run: |
+          python3 - <<'PY'
+          import json, urllib.request
+          for p in ['uno.sdk','uno.templates','progpu.backend','jint']:
+              with urllib.request.urlopen('https://api.nuget.org/v3-flatcontainer/'+p+'/index.json') as r:
+                  v = json.load(r)['versions']
+              print('PACKAGE', p, v[-8:])
+          PY
+          dotnet new install Uno.Templates
+          dotnet new unoapp --help
+          dotnet new unoapp -o /tmp/UnoProbe -n UnoProbe -preset blank -platforms desktop -tfm net10.0
+          find /tmp/UnoProbe -name '*.csproj' -o -name global.json -o -name App.xaml.cs -o -name Program.cs | while read f; do echo "FILE $f"; cat "$f"; done
+      - name: Inspect ProGPU public API
+        run: |
+          git clone --depth 1 https://github.com/wieslawsoltes/ProGPU.git /tmp/ProGPU
+          echo '=== CONTEXT API ==='
+          grep -nE '^    public .*[(]|public .*=>|public .*get;' /tmp/ProGPU/src/ProGPU.Backend/WgpuContext.cs
+          echo '=== TEXTURE API ==='
+          cat /tmp/ProGPU/src/ProGPU.Backend/GpuTexture.cs | head -250
+          echo '=== UNO PRESENTATION ==='
+          sed -n '240,470p' /tmp/ProGPU/src/ProGPU.Uno/ProGpuHostControl.cs
+          echo '=== NATIVE PACKAGING ==='
+          cat /tmp/ProGPU/src/ProGPU.Backend/ProGPU.Backend.csproj
+          git -C /tmp/ProGPU rev-parse HEAD
