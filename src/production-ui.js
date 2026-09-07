@@ -33,7 +33,7 @@
             if(e.anchors){if(e.anchors.every(a=>ids.has(a.entity)))e.anchors=e.anchors.map(a=>({...a,entity:ids.get(a.entity)}));else delete e.anchors;}
             if(e.boundaryIds){if(e.boundaryIds.every(id=>ids.has(id)))e.boundaryIds=e.boundaryIds.map(id=>ids.get(id));else delete e.boundaryIds;}
             added.push(doc.add(e).id);
-        }doc.reindex();return added;
+        }doc.reindex();doc.operationWarnings=K.Constraints?.copyInto(doc,data,ids,matrix)||[];return added;
     }
     P.copyInto=copyInto;
     K.installProductionUI = function(App) {
@@ -42,7 +42,7 @@
         App.prototype.pasteClipboard=function(){const r=oldPaste.call(this);if(this.tool?.id==='paste')this.tool.params.sourceDrawing=this.clipboardDrawing;return r;};
         App.prototype.acceptPoint=function(p,screen=null){
             const t=this.tool;
-            if(t?.id==='paste'&&t.params.sourceDrawing){const matrix=M.multiply(M.translation(...V.sub(p,t.params.origin)),M.scale(P.MM[this.clipboardUnits]/P.MM[this.doc.units]));this.doc.transaction('Paste linked drawing objects',()=>{this.doc.selection=new Set(copyInto(this.doc,t.params.sourceDrawing,this.clipboard,matrix));});this.cancel(false);return;}
+            if(t?.id==='paste'&&t.params.sourceDrawing){const matrix=M.multiply(M.translation(...V.sub(p,t.params.origin)),M.scale(P.MM[this.clipboardUnits]/P.MM[this.doc.units]));this.doc.transaction('Paste linked drawing objects',()=>{this.doc.selection=new Set(copyInto(this.doc,t.params.sourceDrawing,this.clipboard,matrix));});this.cancel(false);if(this.doc.operationWarnings?.length){this.log('Clipboard',this.doc.operationWarnings.join(' '));this.toast(this.doc.operationWarnings.join(' '));}return;}
             // UCS rectangle and circle creation use actual plane coordinates, not world XY.
             const u=P.ensure(this.doc).ucs, tilted=JSON.stringify(u)!==JSON.stringify(P.defaults().ucs);
             if(tilted&&['rectangle','circle','ellipse','polygon','arc'].includes(t?.id)){

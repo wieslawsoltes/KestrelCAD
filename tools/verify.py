@@ -13,7 +13,7 @@ run(sys.executable,'tests/server.test.py');run(sys.executable,'tests/browser.tes
 run(sys.executable,'tests/production.browser.py');run(sys.executable,'tests/dxf_interop.py');run(sys.executable,'tests/production_interop.py')
 for test in ('constraints.test.js','dynamic.test.js','preservation.test.js','shx.test.js','kernel-client.test.js'):
     if (ROOT/'tests'/test).exists():run('node','tests/'+test)
-for test in ('kernel.test.py','advanced.browser.py'):
+for test in ('kernel.test.py','advanced.browser.py','constraints.browser.py','dynamic.browser.py','preservation.browser.py','font.test.py','font.browser.py'):
     if (ROOT/'tests'/test).exists():run(sys.executable,'tests/'+test)
 if args.previews:
     import shutil
