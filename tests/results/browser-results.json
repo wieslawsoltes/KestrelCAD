@@ -1,0 +1,313 @@
+{
+  "suite": "Chromium browser integration",
+  "loading": "offline set_content; insecure context; Canvas compatibility renderer",
+  "passed": 51,
+  "failed": 0,
+  "javascript_errors": [],
+  "diagnostics": {
+    "application": "Kestrel CAD",
+    "version": "1.0.0",
+    "timestamp": "2026-09-07T08:25:02.140Z",
+    "backend": "Canvas 2D",
+    "adapter": null,
+    "fallbackReason": "WebGPU requires localhost or HTTPS.",
+    "secureContext": false,
+    "webgpuExposed": false,
+    "viewport": {
+      "width": 1126,
+      "height": 663,
+      "devicePixelRatio": 1
+    },
+    "drawing": {
+      "name": "Precision Fixture \u00b7 Assembly",
+      "entities": 36,
+      "layers": 8,
+      "selected": 0,
+      "units": "mm"
+    },
+    "render": {
+      "segments": 2397,
+      "triangles": 7090,
+      "cpuMs": 131.10000000000582,
+      "drawCalls": 0,
+      "entities": 36,
+      "style": "shaded-edges",
+      "antialiasing": "Canvas 2D",
+      "retainedGeometry": true,
+      "cpuTimeDescription": "Scene processing and command submission on the CPU; not GPU execution time."
+    },
+    "worker": true,
+    "gpuErrors": [],
+    "codec": {
+      "dwgRead": false,
+      "dwgWrite": false,
+      "bridge": false,
+      "reason": "Run the included Python server on localhost to use the optional DWG bridge."
+    },
+    "limits": {
+      "entities": 200000,
+      "historyEntries": 80
+    },
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36"
+  },
+  "tests": [
+    {
+      "name": "standalone startup and editable 2D example",
+      "status": "passed",
+      "detail": [
+        null,
+        null
+      ]
+    },
+    {
+      "name": "all ribbon tabs are populated",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "light/dark theme toggle updates the document",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "command line creates exact lines, rectangle, circle and closed polyline",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "relative polar coordinate input",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "arc, ellipse and spline drawing commands",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "move, copy, undo and redo edit real geometry",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "numeric rotation and scale",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "mouse drawing through toolbar",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "endpoint object snap resolves imprecise mouse clicks",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "click selection, endpoint grip editing and undo",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "left-to-right selection window contains only enclosed objects",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "right-to-left crossing window selects intersecting objects",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "wheel zoom and middle-button pan",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "property inspector radius change is undoable",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "layer visibility and lock controls affect selection and editing",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "new layer dialog creates a real layer",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "hatching selected boundaries creates clipped geometry",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "dimension and text dialogs create editable annotations",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "rectangular array uses unique editable objects and one undo",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "polar array rotates geometry about the specified center",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "trim removes a bounded interval and preserves both line remainders",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "extend reaches an intersecting line boundary",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "join and explode preserve connected geometry",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "box dialog creates a measurable 3D mesh",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "3D view and visual-style controls change the renderer",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "extrude creates a closed mesh and optionally removes its source",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "Boolean subtract and undo operate on actual mesh geometry",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "section creates line geometry on a specified Z plane",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "3D transform dialog translates mesh vertices",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "command palette search and keyboard execution",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "mirror reflects actual geometry across the specified axis",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "offset circle through modal and mouse-side selection",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "fillet trims two lines and creates a real tangent arc",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "chamfer creates the expected diagonal setback",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "revolve produces the expected tessellated ring volume",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "inspector and text dialog override transformed text direction correctly",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "group and ungroup update entity organization",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "keyboard in-app copy and paste creates independent geometry",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "units conversion rescales actual geometry and is undoable",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "function-key drafting toggles change real editor settings",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "shaded face picking selects the nearest overlapping mesh",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "file input imports independent DXF through the worker",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "native project file input restores the complete drawing",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "DXF export produces an actual browser download",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "Save project produces a valid native browser download",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "PNG export captures the actual viewport",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "SVG export produces vector geometry",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "DWG dialog reports the optional codec requirement",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "cylinder, sphere, cone and torus tools create positive-volume meshes",
+      "status": "passed",
+      "detail": null
+    },
+    {
+      "name": "help and both complete editable demonstration drawings",
+      "status": "passed",
+      "detail": null
+    }
+  ]
+}

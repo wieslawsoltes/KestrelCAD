@@ -1,0 +1,243 @@
+{
+  "suite": "dependency-free Node core tests",
+  "passed": 59,
+  "failed": 0,
+  "tests": [
+    {
+      "name": "vector cross product and normal",
+      "status": "passed"
+    },
+    {
+      "name": "matrix inverse preserves transformed 3D points",
+      "status": "passed"
+    },
+    {
+      "name": "matrix rotation about an arbitrary center",
+      "status": "passed"
+    },
+    {
+      "name": "singular matrix inverse returns null",
+      "status": "passed"
+    },
+    {
+      "name": "camera projection/unprojection in orthographic top and iso",
+      "status": "passed"
+    },
+    {
+      "name": "perspective camera projection/unprojection",
+      "status": "passed"
+    },
+    {
+      "name": "zoom retains the mouse anchor",
+      "status": "passed"
+    },
+    {
+      "name": "camera pan moves content by the requested screen delta",
+      "status": "passed"
+    },
+    {
+      "name": "camera fit contains every vertex",
+      "status": "passed"
+    },
+    {
+      "name": "line intersections return segment parameters",
+      "status": "passed"
+    },
+    {
+      "name": "concave polygon triangulation conserves area",
+      "status": "passed"
+    },
+    {
+      "name": "triangulation also works in a vertical plane",
+      "status": "passed"
+    },
+    {
+      "name": "circle path stays on analytic circle",
+      "status": "passed"
+    },
+    {
+      "name": "three-point arc goes through all supplied points",
+      "status": "passed"
+    },
+    {
+      "name": "collinear three-point arc is rejected",
+      "status": "passed"
+    },
+    {
+      "name": "bulge semicircle is tessellated at the correct radius",
+      "status": "passed"
+    },
+    {
+      "name": "rational quadratic NURBS represents a quarter circle",
+      "status": "passed"
+    },
+    {
+      "name": "nonuniform circle transform becomes an analytic ellipse",
+      "status": "passed"
+    },
+    {
+      "name": "reflected mesh keeps positive volume",
+      "status": "passed"
+    },
+    {
+      "name": "line offset is parallel and has requested distance",
+      "status": "passed"
+    },
+    {
+      "name": "closed outward offset expands both polygon orientations",
+      "status": "passed"
+    },
+    {
+      "name": "nonpositive circle offset is rejected",
+      "status": "passed"
+    },
+    {
+      "name": "hatch line clipping stays inside its boundary",
+      "status": "passed"
+    },
+    {
+      "name": "solid hatch produces filled triangles",
+      "status": "passed"
+    },
+    {
+      "name": "aligned dimension computes the true distance",
+      "status": "passed"
+    },
+    {
+      "name": "box has expected volume and 12 feature edges",
+      "status": "passed"
+    },
+    {
+      "name": "cylinder volume converges to analytic volume",
+      "status": "passed"
+    },
+    {
+      "name": "cone volume converges to analytic volume",
+      "status": "passed"
+    },
+    {
+      "name": "sphere volume converges to analytic volume",
+      "status": "passed"
+    },
+    {
+      "name": "torus volume converges to analytic volume",
+      "status": "passed"
+    },
+    {
+      "name": "positive and negative extrusion preserve enclosed volume",
+      "status": "passed"
+    },
+    {
+      "name": "concave extrusion has valid cap area",
+      "status": "passed"
+    },
+    {
+      "name": "degenerate extrusion is rejected",
+      "status": "passed"
+    },
+    {
+      "name": "revolved rectangular profile matches annular cylinder volume",
+      "status": "passed"
+    },
+    {
+      "name": "partial revolution includes closed caps",
+      "status": "passed"
+    },
+    {
+      "name": "BSP union of overlapping boxes",
+      "status": "passed"
+    },
+    {
+      "name": "BSP subtract of overlapping boxes",
+      "status": "passed"
+    },
+    {
+      "name": "BSP intersect of overlapping boxes",
+      "status": "passed"
+    },
+    {
+      "name": "BSP disjoint intersection is empty",
+      "status": "passed"
+    },
+    {
+      "name": "BSP subtraction operand order is meaningful",
+      "status": "passed"
+    },
+    {
+      "name": "native round trip preserves entities and layers",
+      "status": "passed"
+    },
+    {
+      "name": "transaction undo and redo restore exact geometry",
+      "status": "passed"
+    },
+    {
+      "name": "failed transaction rolls back atomically",
+      "status": "passed"
+    },
+    {
+      "name": "new edits invalidate redo history",
+      "status": "passed"
+    },
+    {
+      "name": "selection order follows picking order for Boolean operands",
+      "status": "passed"
+    },
+    {
+      "name": "locked and hidden layers are not editable",
+      "status": "passed"
+    },
+    {
+      "name": "duplicate and unsafe native identifiers are rejected",
+      "status": "passed"
+    },
+    {
+      "name": "native malformed coordinates, mesh indices and camera are rejected",
+      "status": "passed"
+    },
+    {
+      "name": "spatial index finds screen-near geometry",
+      "status": "passed"
+    },
+    {
+      "name": "DXF writer emits complete ASCII R2000 sections",
+      "status": "passed"
+    },
+    {
+      "name": "DXF imports unweighted and rational splines as valid native entities",
+      "status": "passed"
+    },
+    {
+      "name": "DXF round trip preserves units, Unicode and layer names",
+      "status": "passed"
+    },
+    {
+      "name": "DXF conics survive tilted OCS and reflections",
+      "status": "passed"
+    },
+    {
+      "name": "binary DXF input is explicitly rejected",
+      "status": "passed"
+    },
+    {
+      "name": "malformed DXF group code is rejected",
+      "status": "passed"
+    },
+    {
+      "name": "unsupported DXF entity types are reported",
+      "status": "passed"
+    },
+    {
+      "name": "SVG escapes text and attribute values",
+      "status": "passed"
+    },
+    {
+      "name": "both example projects validate and export",
+      "status": "passed"
+    },
+    {
+      "name": "independent producer DXF imports valid geometry",
+      "status": "passed"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "renderer": {
+    "application": "Kestrel CAD",
+    "version": "1.0.0",
+    "timestamp": "2026-09-07T08:25:10.309Z",
+    "backend": "Canvas 2D",
+    "adapter": null,
+    "fallbackReason": "WebGPU requires localhost or HTTPS.",
+    "secureContext": false,
+    "webgpuExposed": false,
+    "viewport": {
+      "width": 1126,
+      "height": 663,
+      "devicePixelRatio": 1
+    },
+    "drawing": {
+      "name": "Precision Fixture \u00b7 Assembly",
+      "entities": 36,
+      "layers": 8,
+      "selected": 0,
+      "units": "mm"
+    },
+    "render": {
+      "segments": 2397,
+      "triangles": 7090,
+      "cpuMs": 116.20000000001164,
+      "drawCalls": 0,
+      "entities": 36,
+      "style": "shaded-edges",
+      "antialiasing": "Canvas 2D",
+      "retainedGeometry": true,
+      "cpuTimeDescription": "Scene processing and command submission on the CPU; not GPU execution time."
+    },
+    "worker": true,
+    "gpuErrors": [],
+    "codec": {
+      "status": "Not checked"
+    },
+    "limits": {
+      "entities": 200000,
+      "historyEntries": 80
+    },
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36"
+  },
+  "javascript_errors": [],
+  "description": "Actual offline standalone app screenshots; Canvas compatibility renderer."
+}

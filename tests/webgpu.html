@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kestrel CAD • WebGPU validation</title>
+<style>
+:root{color-scheme:dark;font:15px/1.6 system-ui,sans-serif;background:#101823;color:#dce7f0}body{margin:36px auto;max-width:1080px;padding:0 24px}h1{line-height:1.2;margin:12px 0}a{color:#6ed4df}button{font:inherit;background:#24374c;color:inherit;border:1px solid #42576e;border-radius:6px;padding:8px 16px;cursor:pointer}button:disabled{opacity:.5;cursor:default}.eyebrow{letter-spacing:.16em;font-size:12px;color:#7bc6d0}#stage{position:relative;width:640px;height:400px;max-width:100%;overflow:hidden;border:1px solid #3c5168;border-radius:8px;background:#121c29;margin:20px 0}canvas{position:absolute;inset:0}#report{padding:20px;background:#182434;border:1px solid #2a3b4d;border-radius:8px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px}.note{color:#a4b6c7;max-width:880px}#status{font-weight:600;color:#8fe0d0}.actions{display:flex;gap:12px}
+</style>
+</head>
+<body>
+<div class="eyebrow">KESTREL CAD / HARDWARE VALIDATION</div>
+<h1>Test the real WebGPU renderer</h1>
+<p class="note">Serve this package on localhost or HTTPS, then run the checks. These tests compile the actual application shaders, render through the actual pipelines, read pixels back from GPU textures, check depth occlusion and large-coordinate rendering, and detect validation errors. Canvas fallback is never counted as a WebGPU pass.</p>
+<div class="actions"><button id="run">Run WebGPU tests</button><button id="download" disabled>Save JSON report</button><a href="../index.html">Open the editor</a></div>
+<p id="status">Not run. No GPU results have been assumed.</p>
+<div id="stage"><canvas id="scene"></canvas><canvas id="overlay"></canvas></div>
+<pre id="report">The report will include browser, adapter, check results, and any validation errors. No performance or frame-rate claims are inferred from these functional checks.</pre>
+<script src="../src/math.js"></script><script src="../src/geometry.js"></script><script src="../src/model.js"></script><script src="../src/renderer.js"></script><script src="gpu.test.js"></script>
+</body></html>

@@ -1,0 +1,88 @@
+{
+  "suite": "independent ezdxf interoperability",
+  "ezdxf_version": "1.4.4",
+  "passed": 10,
+  "failed": 0,
+  "tests": [
+    {
+      "name": "external.dxf independent read/audit",
+      "status": "passed",
+      "detail": {
+        "model_entities": 25,
+        "audit_errors": 0,
+        "audit_fixes": 0
+      }
+    },
+    {
+      "name": "analytic-roundtrip.dxf independent read/audit",
+      "status": "passed",
+      "detail": {
+        "model_entities": 22,
+        "audit_errors": 0,
+        "audit_fixes": 0
+      }
+    },
+    {
+      "name": "courtyard.dxf independent read/audit",
+      "status": "passed",
+      "detail": {
+        "model_entities": 265,
+        "audit_errors": 0,
+        "audit_fixes": 0
+      }
+    },
+    {
+      "name": "fixture.dxf independent read/audit",
+      "status": "passed",
+      "detail": {
+        "model_entities": 7100,
+        "audit_errors": 0,
+        "audit_fixes": 0
+      }
+    },
+    {
+      "name": "browser-export.dxf independent read/audit",
+      "status": "passed",
+      "detail": {
+        "model_entities": 265,
+        "audit_errors": 0,
+        "audit_fixes": 0
+      }
+    },
+    {
+      "name": "BLOCK-3D matches independent INSERT expansion",
+      "status": "passed",
+      "detail": {
+        "expanded_lines": 1,
+        "coordinate_tolerance": 1e-06
+      }
+    },
+    {
+      "name": "ARRAY-SCALED matches independent INSERT expansion",
+      "status": "passed",
+      "detail": {
+        "expanded_lines": 6,
+        "coordinate_tolerance": 1e-06
+      }
+    },
+    {
+      "name": "MTEXT direction vector",
+      "status": "passed",
+      "detail": "Direction vector preserved"
+    },
+    {
+      "name": "Unicode text round trip",
+      "status": "passed",
+      "detail": "Unicode code units and adjacent hexadecimal letters preserved"
+    },
+    {
+      "name": "External fixture imports without unsupported entities",
+      "status": "passed",
+      "detail": [
+        "MTEXT formatting uses the browser sans-serif font.",
+        "A non-aligned dimension was imported as display geometry.",
+        "A non-aligned dimension was imported as display geometry."
+      ]
+    }
+  ]
+}

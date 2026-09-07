@@ -1,0 +1,21 @@
+{
+  "suite": "Real Kestrel WebGPU pipelines and texture readback",
+  "status": "UNAVAILABLE \u2014 not a WebGPU pass",
+  "date": "2026-09-07T08:25:10.370Z",
+  "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36",
+  "secureContext": false,
+  "backend": "Not initialized",
+  "adapter": null,
+  "fallbackReason": null,
+  "passed": 0,
+  "failed": 0,
+  "tests": [
+    {
+      "name": "WebGPU secure-context availability",
+      "status": "unavailable",
+      "reason": "Open this page on localhost or HTTPS."
+    }
+  ],
+  "validationErrors": [],
+  "note": "Functional checks only. These are not GPU timing or throughput benchmarks."
+}

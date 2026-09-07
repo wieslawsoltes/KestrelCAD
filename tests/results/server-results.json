@@ -1,0 +1,60 @@
+{
+  "suite": "Local HTTP server and mocked codec protocol",
+  "passed": 13,
+  "failed": 0,
+  "actual_native_dwg_conversion_tested": false,
+  "tests": [
+    {
+      "name": "HTTP serves the actual application with security headers",
+      "status": "passed"
+    },
+    {
+      "name": "HTTP serves JavaScript and the hardware validation page",
+      "status": "passed"
+    },
+    {
+      "name": "Missing converters are honestly reported by capabilities and conversion API",
+      "status": "passed"
+    },
+    {
+      "name": "Unrecognized Host header is rejected",
+      "status": "passed"
+    },
+    {
+      "name": "Cross-origin reads are rejected",
+      "status": "passed"
+    },
+    {
+      "name": "Conversion requires a local application header",
+      "status": "passed"
+    },
+    {
+      "name": "Cross-origin conversion is rejected",
+      "status": "passed"
+    },
+    {
+      "name": "Unknown API endpoint returns 404",
+      "status": "passed"
+    },
+    {
+      "name": "Directory listing is disabled",
+      "status": "passed"
+    },
+    {
+      "name": "Symbolic links cannot expose files outside the package",
+      "status": "passed"
+    },
+    {
+      "name": "MOCKED codec bridge verifies fixed arguments, signatures, limits and outputs",
+      "status": "passed"
+    },
+    {
+      "name": "MOCKED malformed codec output is rejected",
+      "status": "passed"
+    },
+    {
+      "name": "MOCKED native-codec timeout returns 504 and releases lock",
+      "status": "passed"
+    }
+  ]
+}

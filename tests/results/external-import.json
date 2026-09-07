@@ -1,0 +1,1469 @@
+{
+  "data": {
+    "format": "kestrel-cad",
+    "version": 1,
+    "name": "Imported drawing",
+    "units": "mm",
+    "currentLayer": "0",
+    "layers": [
+      {
+        "id": "0",
+        "name": "0",
+        "color": "#dce4ed",
+        "visible": true,
+        "locked": false,
+        "linetype": "Continuous",
+        "lineweight": 0.25
+      },
+      {
+        "id": "layer_mtqz5tvj_607",
+        "name": "Defpoints",
+        "color": "#dce4ed",
+        "visible": true,
+        "locked": false,
+        "linetype": "Continuous",
+        "lineweight": 0.25
+      },
+      {
+        "id": "layer_mtqz5tvj_608",
+        "name": "EXTERNAL",
+        "color": "#74c58b",
+        "visible": true,
+        "locked": false,
+        "linetype": "Continuous",
+        "lineweight": 0.25
+      },
+      {
+        "id": "layer_mtqz5tvj_609",
+        "name": "OCS-CIRCLE",
+        "color": "#74c58b",
+        "visible": true,
+        "locked": false,
+        "linetype": "Continuous",
+        "lineweight": 0.25
+      },
+      {
+        "id": "layer_mtqz5tvj_60a",
+        "name": "BLOCK-3D",
+        "color": "#74c58b",
+        "visible": true,
+        "locked": false,
+        "linetype": "Continuous",
+        "lineweight": 0.25
+      },
+      {
+        "id": "layer_mtqz5tvj_60b",
+        "name": "ARRAY-SCALED",
+        "color": "#74c58b",
+        "visible": true,
+        "locked": false,
+        "linetype": "Continuous",
+        "lineweight": 0.25
+      },
+      {
+        "id": "layer_mtqz5tvj_60c",
+        "name": "OCS-POLYLINE",
+        "color": "#74c58b",
+        "visible": true,
+        "locked": false,
+        "linetype": "Continuous",
+        "lineweight": 0.25
+      },
+      {
+        "id": "layer_mtqz5tvj_60d",
+        "name": "MTEXT-DIRECTION",
+        "color": "#74c58b",
+        "visible": true,
+        "locked": false,
+        "linetype": "Continuous",
+        "lineweight": 0.25
+      }
+    ],
+    "entities": [
+      {
+        "id": "e_mtqz5tvj_60e",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "90",
+        "type": "LINE",
+        "points": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            5,
+            40,
+            3
+          ]
+        ]
+      },
+      {
+        "id": "e_mtqz5tvj_60f",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "91",
+        "type": "LINE",
+        "points": [
+          [
+            10,
+            0,
+            0
+          ],
+          [
+            15,
+            40,
+            3
+          ]
+        ]
+      },
+      {
+        "id": "e_mtqz5tvj_60g",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "92",
+        "type": "LINE",
+        "points": [
+          [
+            20,
+            0,
+            0
+          ],
+          [
+            25,
+            40,
+            3
+          ]
+        ]
+      },
+      {
+        "id": "e_mtqz5tvj_60h",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "93",
+        "type": "LINE",
+        "points": [
+          [
+            30,
+            0,
+            0
+          ],
+          [
+            35,
+            40,
+            3
+          ]
+        ]
+      },
+      {
+        "id": "e_mtqz5tvj_60i",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "94",
+        "type": "LINE",
+        "points": [
+          [
+            40,
+            0,
+            0
+          ],
+          [
+            45,
+            40,
+            3
+          ]
+        ]
+      },
+      {
+        "id": "e_mtqz5tvj_60j",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "95",
+        "type": "LINE",
+        "points": [
+          [
+            50,
+            0,
+            0
+          ],
+          [
+            55,
+            40,
+            3
+          ]
+        ]
+      },
+      {
+        "id": "e_mtqz5tvj_60k",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "96",
+        "type": "LINE",
+        "points": [
+          [
+            60,
+            0,
+            0
+          ],
+          [
+            65,
+            40,
+            3
+          ]
+        ]
+      },
+      {
+        "id": "e_mtqz5tvj_60l",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "97",
+        "type": "LINE",
+        "points": [
+          [
+            70,
+            0,
+            0
+          ],
+          [
+            75,
+            40,
+            3
+          ]
+        ]
+      },
+      {
+        "id": "e_mtqz5tvj_60m",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "98",
+        "type": "LINE",
+        "points": [
+          [
+            80,
+            0,
+            0
+          ],
+          [
+            85,
+            40,
+            3
+          ]
+        ]
+      },
+      {
+        "id": "e_mtqz5tvj_60n",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "99",
+        "type": "LINE",
+        "points": [
+          [
+            90,
+            0,
+            0
+          ],
+          [
+            95,
+            40,
+            3
+          ]
+        ]
+      },
+      {
+        "id": "e_mtqz5tvj_60o",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "9A",
+        "type": "LINE",
+        "points": [
+          [
+            100,
+            0,
+            0
+          ],
+          [
+            105,
+            40,
+            3
+          ]
+        ]
+      },
+      {
+        "id": "e_mtqz5tvj_60p",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "9B",
+        "type": "LINE",
+        "points": [
+          [
+            110,
+            0,
+            0
+          ],
+          [
+            115,
+            40,
+            3
+          ]
+        ]
+      },
+      {
+        "id": "e_mtqz5tvj_60q",
+        "layer": "layer_mtqz5tvj_609",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "9C",
+        "type": "CIRCLE",
+        "center": [
+          -3,
+          0.7071067811865475,
+          6.363961030678928
+        ],
+        "radius": 7,
+        "normal": [
+          0,
+          1,
+          1
+        ]
+      },
+      {
+        "id": "e_mtqz5tvk_60r",
+        "layer": "layer_mtqz5tvj_60c",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "9D",
+        "type": "POLYLINE",
+        "points": [
+          [
+            0,
+            3.5355339059327373,
+            3.5355339059327373
+          ],
+          [
+            -10,
+            3.5355339059327373,
+            3.5355339059327373
+          ],
+          [
+            -10,
+            -3.5355339059327373,
+            10.606601717798211
+          ]
+        ],
+        "bulges": [
+          1,
+          0,
+          0
+        ],
+        "closed": true,
+        "normal": [
+          0,
+          1,
+          1
+        ]
+      },
+      {
+        "id": "e_mtqz5tvk_60s",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "9E",
+        "type": "SPLINE",
+        "controlPoints": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            10,
+            30,
+            0
+          ],
+          [
+            20,
+            -10,
+            0
+          ],
+          [
+            30,
+            0,
+            0
+          ]
+        ],
+        "degree": 3,
+        "knots": [
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1
+        ],
+        "closed": false
+      },
+      {
+        "id": "e_mtqz5tvk_60t",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "9F",
+        "type": "SPLINE",
+        "controlPoints": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            1,
+            1,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ],
+        "degree": 2,
+        "knots": [
+          0,
+          0,
+          0,
+          1,
+          1,
+          1
+        ],
+        "weights": [
+          1,
+          0.7071067811865476,
+          1
+        ],
+        "closed": false
+      },
+      {
+        "id": "e_mtqz5tvk_60u",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "A0",
+        "type": "TEXT",
+        "position": [
+          0,
+          -10,
+          0
+        ],
+        "text": "±BOLT · Żółć Ω 😀",
+        "height": 3,
+        "rotation": 0.5235987755982988,
+        "align": "left",
+        "normal": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "id": "e_mtqz5tvk_60v",
+        "layer": "layer_mtqz5tvj_60d",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "A1",
+        "type": "TEXT",
+        "position": [
+          30,
+          -20,
+          0
+        ],
+        "text": "DIRECTION\nSECOND LINE",
+        "height": 4,
+        "rotation": 1.5707963267948966,
+        "align": "left",
+        "direction": [
+          0,
+          1,
+          0
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "id": "e_mtqz5tvk_60w",
+        "layer": "layer_mtqz5tvj_60a",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "A5",
+        "type": "LINE",
+        "points": [
+          [
+            -27.674910820550394,
+            -15.335628980030961,
+            17.745923330765777
+          ],
+          [
+            -46.63727201382421,
+            -18.628844357241864,
+            23.18500325802599
+          ]
+        ]
+      },
+      {
+        "id": "e_mtqz5tvk_60x",
+        "layer": "layer_mtqz5tvj_60a",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "A6",
+        "type": "CIRCLE",
+        "center": [
+          -33.67167453105261,
+          -21.94887413161488,
+          22.251898648658177
+        ],
+        "radius": 4,
+        "normal": [
+          0.17609018126512477,
+          0.4402254531628119,
+          0.880450906325624
+        ],
+        "axisX": [
+          -3.7924722386547627,
+          -0.6586430754421804,
+          1.0878159854520426
+        ],
+        "axisY": [
+          1.0587871778715399,
+          -3.530639333799704,
+          1.553562231325544
+        ],
+        "rx": 4,
+        "ry": 4
+      },
+      {
+        "id": "e_mtqz5tvk_60y",
+        "layer": "layer_mtqz5tvj_60b",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "A5",
+        "type": "LINE",
+        "points": [
+          [
+            100,
+            0,
+            0
+          ],
+          [
+            117.32050807568876,
+            10,
+            0
+          ]
+        ]
+      },
+      {
+        "id": "e_mtqz5tvk_60z",
+        "layer": "layer_mtqz5tvj_60b",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "A6",
+        "type": "ELLIPSE",
+        "center": [
+          102.4282032302755,
+          11.794228634059948,
+          0
+        ],
+        "radius": 4,
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "axisX": [
+          3.464101615137755,
+          1.9999999999999998,
+          0
+        ],
+        "axisY": [
+          -2.9999999999999996,
+          5.196152422706632,
+          0
+        ],
+        "rx": 4,
+        "ry": 6
+      },
+      {
+        "id": "e_mtqz5tvl_610",
+        "layer": "layer_mtqz5tvj_60b",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "A5",
+        "type": "LINE",
+        "points": [
+          [
+            125.98076211353317,
+            14.999999999999998,
+            0
+          ],
+          [
+            143.30127018922195,
+            25,
+            0
+          ]
+        ]
+      },
+      {
+        "id": "e_mtqz5tvl_611",
+        "layer": "layer_mtqz5tvj_60b",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "A6",
+        "type": "ELLIPSE",
+        "center": [
+          128.4089653438087,
+          26.794228634059948,
+          0
+        ],
+        "radius": 4,
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "axisX": [
+          3.464101615137755,
+          1.9999999999999998,
+          0
+        ],
+        "axisY": [
+          -2.9999999999999996,
+          5.196152422706632,
+          0
+        ],
+        "rx": 4,
+        "ry": 6
+      },
+      {
+        "id": "e_mtqz5tvl_612",
+        "layer": "layer_mtqz5tvj_60b",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "A5",
+        "type": "LINE",
+        "points": [
+          [
+            151.96152422706632,
+            29.999999999999996,
+            0
+          ],
+          [
+            169.2820323027551,
+            40,
+            0
+          ]
+        ]
+      },
+      {
+        "id": "e_mtqz5tvl_613",
+        "layer": "layer_mtqz5tvj_60b",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "A6",
+        "type": "ELLIPSE",
+        "center": [
+          154.38972745734185,
+          41.79422863405995,
+          0
+        ],
+        "radius": 4,
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "axisX": [
+          3.464101615137755,
+          1.9999999999999998,
+          0
+        ],
+        "axisY": [
+          -2.9999999999999996,
+          5.196152422706632,
+          0
+        ],
+        "rx": 4,
+        "ry": 6
+      },
+      {
+        "id": "e_mtqz5tvl_614",
+        "layer": "layer_mtqz5tvj_60b",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "A5",
+        "type": "LINE",
+        "points": [
+          [
+            90,
+            17.320508075688775,
+            0
+          ],
+          [
+            107.32050807568876,
+            27.320508075688775,
+            0
+          ]
+        ]
+      },
+      {
+        "id": "e_mtqz5tvl_615",
+        "layer": "layer_mtqz5tvj_60b",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "A6",
+        "type": "ELLIPSE",
+        "center": [
+          92.4282032302755,
+          29.114736709748723,
+          0
+        ],
+        "radius": 4,
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "axisX": [
+          3.464101615137755,
+          1.9999999999999998,
+          0
+        ],
+        "axisY": [
+          -2.9999999999999996,
+          5.196152422706632,
+          0
+        ],
+        "rx": 4,
+        "ry": 6
+      },
+      {
+        "id": "e_mtqz5tvl_616",
+        "layer": "layer_mtqz5tvj_60b",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "A5",
+        "type": "LINE",
+        "points": [
+          [
+            115.98076211353317,
+            32.32050807568877,
+            0
+          ],
+          [
+            133.30127018922195,
+            42.32050807568877,
+            0
+          ]
+        ]
+      },
+      {
+        "id": "e_mtqz5tvl_617",
+        "layer": "layer_mtqz5tvj_60b",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "A6",
+        "type": "ELLIPSE",
+        "center": [
+          118.40896534380867,
+          44.11473670974872,
+          0
+        ],
+        "radius": 4,
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "axisX": [
+          3.464101615137755,
+          1.9999999999999998,
+          0
+        ],
+        "axisY": [
+          -2.9999999999999996,
+          5.196152422706632,
+          0
+        ],
+        "rx": 4,
+        "ry": 6
+      },
+      {
+        "id": "e_mtqz5tvl_618",
+        "layer": "layer_mtqz5tvj_60b",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "A5",
+        "type": "LINE",
+        "points": [
+          [
+            141.96152422706632,
+            47.32050807568877,
+            0
+          ],
+          [
+            159.2820323027551,
+            57.32050807568877,
+            0
+          ]
+        ]
+      },
+      {
+        "id": "e_mtqz5tvl_619",
+        "layer": "layer_mtqz5tvj_60b",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "A6",
+        "type": "ELLIPSE",
+        "center": [
+          144.38972745734185,
+          59.11473670974872,
+          0
+        ],
+        "radius": 4,
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "axisX": [
+          3.464101615137755,
+          1.9999999999999998,
+          0
+        ],
+        "axisY": [
+          -2.9999999999999996,
+          5.196152422706632,
+          0
+        ],
+        "rx": 4,
+        "ry": 6
+      },
+      {
+        "id": "e_mtqz5tvl_61a",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "#dce4ed",
+        "linetype": "ByLayer",
+        "sourceHandle": "AB",
+        "type": "HATCH",
+        "points": [
+          [
+            0,
+            50,
+            0
+          ],
+          [
+            20,
+            50,
+            0
+          ],
+          [
+            20,
+            70,
+            0
+          ],
+          [
+            0,
+            70,
+            0
+          ]
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "pattern": "ANSI31",
+        "angle": 0,
+        "spacing": 6.350000000092523
+      },
+      {
+        "id": "e_mtqz5tvl_61b",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "#698ee6",
+        "linetype": "ByLayer",
+        "sourceHandle": "AC",
+        "type": "HATCH",
+        "points": [
+          [
+            0,
+            80,
+            0
+          ],
+          [
+            0.12311659404862141,
+            78.4356553495977,
+            0
+          ],
+          [
+            0.48943483704846535,
+            76.90983005625053,
+            0
+          ],
+          [
+            1.0899347581163212,
+            75.46009500260453,
+            0
+          ],
+          [
+            1.9098300562505255,
+            74.12214747707527,
+            0
+          ],
+          [
+            2.9289321881345245,
+            72.92893218813452,
+            0
+          ],
+          [
+            4.122147477075268,
+            71.90983005625053,
+            0
+          ],
+          [
+            5.460095002604532,
+            71.08993475811633,
+            0
+          ],
+          [
+            6.9098300562505255,
+            70.48943483704846,
+            0
+          ],
+          [
+            8.43565534959769,
+            70.12311659404862,
+            0
+          ],
+          [
+            10,
+            70,
+            0
+          ],
+          [
+            11.564344650402306,
+            70.12311659404862,
+            0
+          ],
+          [
+            13.090169943749473,
+            70.48943483704846,
+            0
+          ],
+          [
+            14.539904997395467,
+            71.08993475811633,
+            0
+          ],
+          [
+            15.87785252292473,
+            71.90983005625053,
+            0
+          ],
+          [
+            17.071067811865476,
+            72.92893218813452,
+            0
+          ],
+          [
+            18.090169943749473,
+            74.12214747707527,
+            0
+          ],
+          [
+            18.91006524188368,
+            75.46009500260453,
+            0
+          ],
+          [
+            19.510565162951536,
+            76.90983005625053,
+            0
+          ],
+          [
+            19.876883405951375,
+            78.4356553495977,
+            0
+          ],
+          [
+            20,
+            80,
+            0
+          ],
+          [
+            20,
+            100,
+            0
+          ],
+          [
+            0,
+            100,
+            0
+          ]
+        ],
+        "normal": [
+          0,
+          0,
+          1
+        ],
+        "pattern": "solid",
+        "angle": 0.7853981633974483,
+        "spacing": 3.175
+      },
+      {
+        "id": "e_mtqz5tvm_61c",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "AD",
+        "type": "MESH",
+        "vertices": [
+          [
+            100,
+            100,
+            0
+          ],
+          [
+            110,
+            100,
+            0
+          ],
+          [
+            110,
+            110,
+            0
+          ],
+          [
+            100,
+            110,
+            0
+          ],
+          [
+            100,
+            100,
+            10
+          ],
+          [
+            110,
+            100,
+            10
+          ]
+        ],
+        "faces": [
+          [
+            0,
+            1,
+            2,
+            3
+          ],
+          [
+            0,
+            4,
+            5,
+            1
+          ]
+        ],
+        "primitive": "Polyface mesh"
+      },
+      {
+        "id": "e_mtqz5tvm_61d",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "BD",
+        "type": "LINE",
+        "points": [
+          [
+            -0.030316953129541625,
+            0.1212678125181665,
+            0
+          ],
+          [
+            -2.516307109751955,
+            10.06522843900782,
+            0
+          ]
+        ]
+      },
+      {
+        "id": "e_mtqz5tvm_61e",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "BE",
+        "type": "LINE",
+        "points": [
+          [
+            79.96968304687046,
+            20.121267812518166,
+            0
+          ],
+          [
+            77.48369289024804,
+            30.065228439007814,
+            0
+          ]
+        ]
+      },
+      {
+        "id": "e_mtqz5tvm_61f",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "BYBLOCK",
+        "sourceHandle": "77",
+        "type": "POLYLINE",
+        "points": [
+          [
+            -2.3616906487912925,
+            9.807534337406715,
+            0
+          ],
+          [
+            -2.4890218519353673,
+            9.595315665499925,
+            0
+          ]
+        ],
+        "bulges": [
+          0,
+          0
+        ],
+        "closed": false,
+        "normal": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "id": "e_mtqz5tvm_61g",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "BYBLOCK",
+        "sourceHandle": "77",
+        "type": "POLYLINE",
+        "points": [
+          [
+            77.51097814806462,
+            29.59531566549992,
+            0
+          ],
+          [
+            77.6383093512087,
+            29.80753433740671,
+            0
+          ]
+        ],
+        "bulges": [
+          0,
+          0
+        ],
+        "closed": false,
+        "normal": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "id": "e_mtqz5tvm_61h",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "C3",
+        "type": "LINE",
+        "points": [
+          [
+            -2.42535625036333,
+            9.70142500145332,
+            0
+          ],
+          [
+            77.57464374963666,
+            29.701425001453316,
+            0
+          ]
+        ]
+      },
+      {
+        "id": "e_mtqz5tvm_61i",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "C4",
+        "type": "TEXT",
+        "position": [
+          37.5200732340035,
+          19.919707063986017,
+          0
+        ],
+        "text": "8246.21",
+        "height": 0.25,
+        "rotation": 0.24497866312686412,
+        "align": "center",
+        "normal": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "id": "e_mtqz5tvm_61j",
+        "layer": "layer_mtqz5tvj_607",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "C5",
+        "type": "POINT",
+        "position": [
+          -2.42535625036333,
+          9.70142500145332,
+          0
+        ]
+      },
+      {
+        "id": "e_mtqz5tvm_61k",
+        "layer": "layer_mtqz5tvj_607",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "C6",
+        "type": "POINT",
+        "position": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "e_mtqz5tvm_61l",
+        "layer": "layer_mtqz5tvj_607",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "C7",
+        "type": "POINT",
+        "position": [
+          80,
+          20,
+          0
+        ]
+      },
+      {
+        "id": "e_mtqz5tvm_61m",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "CC",
+        "type": "LINE",
+        "points": [
+          [
+            0,
+            -0.125,
+            0
+          ],
+          [
+            0,
+            -30.375,
+            0
+          ]
+        ]
+      },
+      {
+        "id": "e_mtqz5tvm_61n",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "CD",
+        "type": "LINE",
+        "points": [
+          [
+            80,
+            19.875,
+            0
+          ],
+          [
+            80,
+            -30.375,
+            0
+          ]
+        ]
+      },
+      {
+        "id": "e_mtqz5tvm_61o",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "BYBLOCK",
+        "sourceHandle": "77",
+        "type": "POLYLINE",
+        "points": [
+          [
+            0.08750000000000001,
+            -29.9125,
+            0
+          ],
+          [
+            -0.08750000000000001,
+            -30.0875,
+            0
+          ]
+        ],
+        "bulges": [
+          0,
+          0
+        ],
+        "closed": false,
+        "normal": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "id": "e_mtqz5tvm_61p",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "BYBLOCK",
+        "sourceHandle": "77",
+        "type": "POLYLINE",
+        "points": [
+          [
+            79.9125,
+            -30.0875,
+            0
+          ],
+          [
+            80.0875,
+            -29.9125,
+            0
+          ]
+        ],
+        "bulges": [
+          0,
+          0
+        ],
+        "closed": false,
+        "normal": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "id": "e_mtqz5tvm_61q",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "D2",
+        "type": "LINE",
+        "points": [
+          [
+            0,
+            -30,
+            0
+          ],
+          [
+            80,
+            -30,
+            0
+          ]
+        ]
+      },
+      {
+        "id": "e_mtqz5tvm_61r",
+        "layer": "layer_mtqz5tvj_608",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "D3",
+        "type": "TEXT",
+        "position": [
+          40,
+          -29.775,
+          0
+        ],
+        "text": "8000",
+        "height": 0.25,
+        "rotation": 0,
+        "align": "center",
+        "normal": [
+          0,
+          0,
+          1
+        ]
+      },
+      {
+        "id": "e_mtqz5tvm_61s",
+        "layer": "layer_mtqz5tvj_607",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "D4",
+        "type": "POINT",
+        "position": [
+          0,
+          -30,
+          0
+        ]
+      },
+      {
+        "id": "e_mtqz5tvm_61t",
+        "layer": "layer_mtqz5tvj_607",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "D5",
+        "type": "POINT",
+        "position": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "id": "e_mtqz5tvm_61u",
+        "layer": "layer_mtqz5tvj_607",
+        "color": "bylayer",
+        "linetype": "ByLayer",
+        "sourceHandle": "D6",
+        "type": "POINT",
+        "position": [
+          80,
+          20,
+          0
+        ]
+      }
+    ],
+    "camera": null
+  },
+  "report": {
+    "read": 61,
+    "created": 53,
+    "skipped": {},
+    "warnings": [
+      "MTEXT formatting uses the browser sans-serif font.",
+      "A non-aligned dimension was imported as display geometry.",
+      "A non-aligned dimension was imported as display geometry."
+    ],
+    "source": "DXF",
+    "encoding": "windows-1252"
+  }
+}

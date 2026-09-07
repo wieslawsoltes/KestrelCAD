@@ -1,0 +1,24 @@
+{
+  "application": "Kestrel CAD",
+  "built_utc": "2026-09-07T08:25:10.489820+00:00",
+  "tests": {
+    "core": {
+      "passed": 59,
+      "failed": 0
+    },
+    "browser": {
+      "passed": 51,
+      "failed": 0
+    },
+    "server": {
+      "passed": 13,
+      "failed": 0
+    },
+    "dxf-interop": {
+      "passed": 10,
+      "failed": 0
+    }
+  },
+  "webgpu_hardware_verified": false,
+  "native_dwg_codec_verified": false
+}
