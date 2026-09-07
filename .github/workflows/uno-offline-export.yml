@@ -1,0 +1,41 @@
+name: Export Uno validation compiler
+on:
+  push:
+    branches: [uno-progpu-port]
+    paths: ['.github/workflows/uno-offline-export.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: uno-compiler-environment
+          run-id: 34129437508
+          github-token: ${{ github.token }}
+          path: transfer
+      - run: |
+          ls -lh transfer
+          split -b 350M -d transfer/nuget-cache.tar.gz transfer/cache-
+          mkdir refs
+          tar -xzf transfer/reference-source.tar.gz -C refs --wildcards 'ProGPU/src/*' 'Probe/*/*.csproj' 'Probe/*/App.xaml' 'Probe/*/Platforms/Desktop/Program.cs' 'Probe/*/obj/project.assets.json' 'Probe/Directory.Packages.props' 'Probe/Directory.Build.props' 'Probe/global.json' || true
+          tar -czf transfer/reference-api.tar.gz -C refs .
+      - uses: actions/upload-artifact@v4
+        with: {name: uno-sdk, path: transfer/dotnet10.tar.gz, compression-level: 0, retention-days: 2}
+      - uses: actions/upload-artifact@v4
+        with: {name: uno-reference-api, path: transfer/reference-api.tar.gz, compression-level: 0, retention-days: 2}
+      - uses: actions/upload-artifact@v4
+        with: {name: uno-cache-00, path: transfer/cache-00, compression-level: 0, retention-days: 2}
+      - uses: actions/upload-artifact@v4
+        with: {name: uno-cache-01, path: transfer/cache-01, compression-level: 0, retention-days: 2}
+      - uses: actions/upload-artifact@v4
+        with: {name: uno-cache-02, path: transfer/cache-02, compression-level: 0, retention-days: 2}
+      - uses: actions/upload-artifact@v4
+        with: {name: uno-cache-03, path: transfer/cache-03, compression-level: 0, retention-days: 2}
+      - uses: actions/upload-artifact@v4
+        with: {name: uno-cache-04, path: transfer/cache-04, compression-level: 0, retention-days: 2}
+      - uses: actions/upload-artifact@v4
+        with: {name: uno-cache-05, path: transfer/cache-05, compression-level: 0, retention-days: 2}
