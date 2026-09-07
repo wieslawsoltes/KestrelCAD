@@ -99,7 +99,7 @@
         let block = null;
         for (const r of recs.filter(r => r.section === 'BLOCKS')) {
             if (r.type === 'BLOCK') {
-                block = { name: str(r, 2), base: pt(r), records: [] };
+                block = { id: K.uid('block'), name: str(r, 2), base: pt(r), records: [] };
                 blocks.set(block.name, block);
             }
             else if (r.type === 'ENDBLK')
@@ -207,12 +207,15 @@
                         else
                             skip(t);
                     }
+                    else if (t === 'ATTRIB' && K.Production && doc.entities.at(-1)?.type === 'INSERT') {
+                        doc.entities.at(-1).attributes[decode(str(r, 2))] = decode(str(r, 1));
+                    }
                     else if (t === 'TEXT' || t === 'MTEXT' || t === 'ATTRIB' || t === 'ATTDEF') {
                         if ((t === 'ATTRIB' || t === 'ATTDEF') && (num(r, 70) & 1))
                             continue;
                         const raw = t === 'MTEXT' ? values(r, 3).join('') + str(r, 1) : str(r, 1);
                         const align = t === 'MTEXT' ? [2, 5, 8].includes(num(r, 71)) ? 'center' : [3, 6, 9].includes(num(r, 71)) ? 'right' : 'left' : num(r, 72) === 1 ? 'center' : num(r, 72) === 2 ? 'right' : 'left';
-                        emit({ type: 'TEXT', position: t === 'MTEXT' ? pt(r) : ocs(align !== 'left' && has(r, 11) ? pt(r, 11) : pt(r), normal(r)), text: t === 'MTEXT' ? stripMText(raw) : decode(raw), height: Math.max(EPS, num(r, 40, 10)), rotation: t === 'MTEXT' && has(r, 11) ? Math.atan2(num(r, 21), num(r, 11)) : num(r, 50) * Math.PI / 180, align, direction: t === 'MTEXT' && has(r, 11) ? pt(r, 11) : undefined, normal: normal(r) }, r, m, inherit);
+                        emit({ type: 'TEXT', position: t === 'MTEXT' ? pt(r) : ocs(align !== 'left' && has(r, 11) ? pt(r, 11) : pt(r), normal(r)), text: t === 'MTEXT' ? stripMText(raw) : decode(raw), attributeTag: t === 'ATTDEF' ? decode(str(r, 2)) : undefined, height: Math.max(EPS, num(r, 40, 10)), rotation: t === 'MTEXT' && has(r, 11) ? Math.atan2(num(r, 21), num(r, 11)) : num(r, 50) * Math.PI / 180, align, direction: t === 'MTEXT' && has(r, 11) ? pt(r, 11) : undefined, normal: normal(r) }, r, m, inherit);
                         if (t === 'MTEXT' && !report.warnings.includes('MTEXT formatting uses the browser sans-serif font.'))
                             report.warnings.push('MTEXT formatting uses the browser sans-serif font.');
                     }
@@ -250,14 +253,15 @@
                                     continue;
                                 locations.add(key);
                                 const matrix = M.multiply(base, M.multiply(M.translation(dx, dy, 0), M.multiply(scale, M.translation(...V.mul(block.base, -1)))));
-                                readRecords(block.records, m ? M.multiply(m, matrix) : matrix, c.layer, [...stack, name]);
+                                if (K.Production) emit({ type: 'INSERT', block: block.id, matrix: Array.from(matrix), attributes: {} }, r, m, inherit);
+                                else readRecords(block.records, m ? M.multiply(m, matrix) : matrix, c.layer, [...stack, name]);
                             }
                     }
                     else if (t === 'DIMENSION') {
                         const kind = num(r, 70) & 7;
-                        if (kind === 1 && has(r, 13) && has(r, 14)) {
-                            const a = pt(r, 13), b = pt(r, 14), n = V.norm(V.cross(normal(r), V.sub(b, a))), off = V.dot(V.sub(pt(r), a), n), text = str(r, 1);
-                            emit({ type: 'DIMENSION', points: [a, b], offset: off, normal: normal(r), text: text && text !== '<>' ? decode(text) : undefined, textHeight: Math.max(V.dist(a, b) * .025, .1) }, r, m, inherit);
+                        if ((kind === 1 || kind === 0 && K.Production) && has(r, 13) && has(r, 14)) {
+                            const a = pt(r, 13), b = pt(r, 14), axis = [Math.cos(num(r,50)*Math.PI/180), Math.sin(num(r,50)*Math.PI/180),0], n = V.norm(V.cross(normal(r), kind === 0 ? axis : V.sub(b, a))), off = V.dot(V.sub(pt(r), a), n), text = str(r, 1);
+                            emit({ type: 'DIMENSION', kind: kind === 0 ? 'linear' : undefined, measureAxis: kind === 0 ? axis : undefined, dimstyle: K.Production ? decode(str(r,3,'STANDARD')) : undefined, points: [a, b], offset: off, normal: normal(r), text: text && text !== '<>' ? decode(text) : undefined, textHeight: Math.max(V.dist(a, b) * .025, .1) }, r, m, inherit);
                         }
                         else if (blocks.has(str(r, 2))) {
                             readRecords(blocks.get(str(r, 2)).records, m, common(r, inherit).layer, [...stack, str(r, 2)]);
@@ -265,6 +269,23 @@
                         }
                         else
                             skip(t, 'Unsupported dimension subtype without an anonymous display block.');
+                    }
+                    else if (t === 'HATCH' && K.Production && num(r, 91, 1) > 1) {
+                        const loops = []; let begin = r.pairs.findIndex(p => p[0] === 92);
+                        for (let loopIndex = 0; loopIndex < num(r, 91); loopIndex++) {
+                            if (begin < 0 || !(Number(r.pairs[begin][1]) & 2)) throw Error('Only polyline hatch edge loops are supported.');
+                            let j = begin + 1; while (j < r.pairs.length && r.pairs[j][0] !== 93) j++;
+                            const count = Number(r.pairs[j++]?.[1]), points = [], bulges = [];
+                            if (!Number.isInteger(count) || count < 3 || count > 10000) throw Error('Invalid hatch loop.');
+                            for (let k = 0; k < count; k++) {
+                                if (r.pairs[j]?.[0] !== 10 || r.pairs[j+1]?.[0] !== 20) throw Error('Invalid hatch vertex.');
+                                points.push(ocs([Number(r.pairs[j][1]), Number(r.pairs[j+1][1]), num(r, 30)], normal(r))); j += 2;
+                                bulges.push(r.pairs[j]?.[0] === 42 ? Number(r.pairs[j++][1]) : 0);
+                            }
+                            loops.push(bulges.some(Boolean) ? G.path({ type:'POLYLINE', points, bulges, closed:true, normal:normal(r) }, .1) : points);
+                            begin = r.pairs.findIndex((p, i) => i >= j && p[0] === 92);
+                        }
+                        emit({ type:'HATCH', points:loops[0], loops, normal:normal(r), pattern:num(r,70)?'solid':num(r,78)>1?'cross':'ANSI31', angle:num(r,52,45)*Math.PI/180, spacing:Math.max(.1,Math.hypot(num(r,45),num(r,46))||3.175) }, r,m,inherit);
                     }
                     else if (t === 'HATCH') {
                         if (num(r, 91, 1) !== 1) {
@@ -304,6 +325,16 @@
                 }
             }
         }
+        if (K.Production) {
+            doc.production.dimstyles = recs.filter(r => r.section === 'TABLES' && r.type === 'DIMSTYLE').map(r => ({ name: decode(str(r, 2, 'STANDARD')), textHeight: Math.max(1e-7, num(r, 140, 2.5)), precision: Math.max(0, Math.min(8, Math.round(num(r, 271, 2)))), scale: Math.max(1e-7, num(r, 144, 1)), prefix: '', suffix: '' }));
+            if (!doc.production.dimstyles.length) doc.production.dimstyles = K.Production.defaults().dimstyles;
+            for (const block of blocks.values()) {
+                const start = doc.entities.length;
+                readRecords(block.records, null, null, [block.name]);
+                const entities = doc.entities.splice(start), attributes = entities.filter(e => e.attributeTag).map(e => ({ tag: e.attributeTag, value: e.text, position: e.position, height: e.height, rotation: e.rotation || 0 }));
+                doc.production.blocks.push({ id: block.id, name: block.name.replace(/[^a-zA-Z0-9_$ .-]/g, '_') || block.id, entities: entities.filter(e => !e.attributeTag), attributes });
+            }
+        }
         readRecords(recs.filter(r => r.section === 'ENTITIES' && !['SECTION', 'ENDSEC'].includes(r.type)));
         doc.reindex();
         doc.dirty = false;
@@ -317,6 +348,7 @@
         let handle = 0x100;
         const h = () => (++handle).toString(16).toUpperCase(), put = (...pairs) => { for (let i = 0; i < pairs.length; i += 2)
             out.push(String(pairs[i]), typeof pairs[i + 1] === 'number' ? Number(pairs[i + 1].toFixed(10)).toString() : String(pairs[i + 1])); }, point = (code, p) => put(code, p[0], code + 10, p[1], code + 20, p[2] || 0), esc = s => String(s || '').replace(/[\r\n]/g, ' ').replace(/[^\x20-\x7E]/g, c => { const n = c.codePointAt(0); return n <= 0xffff ? '\\U+' + n.toString(16).toUpperCase().padStart(4, '0') : [...c].map(() => c).join(''); });
+        const userBlocks = (doc.production?.blocks || []).map(b => ({ ...b, handle: h() })), userBlockMap = new Map(userBlocks.map(b => [b.id, b]));
         const layerName = id => esc(doc.layer(id).name), modelHandle = h(), paperHandle = h(), dimensionBlocks = doc.entities.filter(e => e.type === 'DIMENSION').map((e, i) => ({ e, name: '*D' + (i + 1), handle: h() })), dimMap = new Map(dimensionBlocks.map(v => [v.e.id, v]));
         put(0, 'SECTION', 2, 'HEADER', 9, '$ACADVER', 1, 'AC1015', 9, '$ACADMAINTVER', 70, 6, 9, '$DWGCODEPAGE', 3, 'ANSI_1252', 9, '$INSUNITS', 70, unitCodes[doc.units] ?? 4, 9, '$MEASUREMENT', 70, ['in', 'ft'].includes(doc.units) ? 0 : 1, 9, '$LUNITS', 70, 2, 9, '$LUPREC', 70, 4, 9, '$HANDSEED', 5, 'FFFFFFF', 9, '$INSBASE');
         point(10, [0, 0, 0]);
@@ -337,8 +369,8 @@
         put(0, 'TABLE', 2, 'STYLE', 5, h(), 100, 'AcDbSymbolTable', 70, 1, 0, 'STYLE', 5, h(), 100, 'AcDbSymbolTableRecord', 100, 'AcDbTextStyleTableRecord', 2, 'STANDARD', 70, 0, 40, 0, 41, 1, 50, 0, 71, 0, 42, 2.5, 3, 'txt', 4, '', 0, 'ENDTAB');
         put(0, 'TABLE', 2, 'DIMSTYLE', 5, h(), 100, 'AcDbSymbolTable', 100, 'AcDbDimStyleTable', 70, 1, 0, 'DIMSTYLE', 105, h(), 100, 'AcDbSymbolTableRecord', 100, 'AcDbDimStyleTableRecord', 2, 'STANDARD', 70, 0, 40, 1, 41, doc.entities.find(e => e.type === 'DIMENSION')?.textHeight || 2.5, 140, doc.entities.find(e => e.type === 'DIMENSION')?.textHeight || 2.5, 147, 1, 271, 2, 0, 'ENDTAB');
         put(0, 'TABLE', 2, 'APPID', 5, h(), 100, 'AcDbSymbolTable', 70, 1, 0, 'APPID', 5, h(), 100, 'AcDbSymbolTableRecord', 100, 'AcDbRegAppTableRecord', 2, 'ACAD', 70, 0, 0, 'ENDTAB');
-        put(0, 'TABLE', 2, 'BLOCK_RECORD', 5, h(), 100, 'AcDbSymbolTable', 70, 2 + dimensionBlocks.length);
-        for (const b of [{ name: '*Model_Space', handle: modelHandle }, { name: '*Paper_Space', handle: paperHandle }, ...dimensionBlocks])
+        put(0, 'TABLE', 2, 'BLOCK_RECORD', 5, h(), 100, 'AcDbSymbolTable', 70, 2 + dimensionBlocks.length + userBlocks.length);
+        for (const b of [{ name: '*Model_Space', handle: modelHandle }, { name: '*Paper_Space', handle: paperHandle }, ...dimensionBlocks, ...userBlocks])
             put(0, 'BLOCK_RECORD', 5, b.handle, 100, 'AcDbSymbolTableRecord', 100, 'AcDbBlockTableRecord', 2, b.name, 70, 0, 280, 1, 281, 0);
         put(0, 'ENDTAB', 0, 'ENDSEC');
         function base(type, e, owner = modelHandle) { put(0, type, 5, h(), 330, owner, 100, 'AcDbEntity', 8, layerName(e.layer)); if (e.color && e.color !== 'bylayer')
@@ -346,6 +378,24 @@
             put(370, Math.round(e.lineweight * 100)); if (e.linetype && e.linetype !== 'ByLayer')
             put(6, /center/i.test(e.linetype) ? 'Center' : /dash/i.test(e.linetype) ? 'Dashed' : 'Continuous'); }
         function writeEntity(e, owner = modelHandle) {
+            if (e.type === 'INSERT') {
+                const b = userBlockMap.get(e.block); if (!b) throw Error('Missing exported block.');
+                const m = e.matrix, x = [m[0],m[1],m[2]], y = [m[4],m[5],m[6]], z = [m[8],m[9],m[10]], n = V.norm(V.cross(x,y)), ax = basis(n), sx = V.len(x), sy = V.len(y), sz = V.dot(z,n);
+                if (Math.abs(V.dot(x,y)) > 1e-7*sx*sy || Math.abs(V.dot(x,z))+Math.abs(V.dot(y,z)) > 1e-7*sx*Math.max(V.len(z),1)) {
+                    for (const child of K.Production.expand(doc,e)) writeEntity(child,owner); return;
+                }
+                const pos = [m[12],m[13],m[14]], attrs = b.attributes || [];
+                base('INSERT',e,owner); put(100,'AcDbBlockReference',2,b.name,66,attrs.length?1:0);
+                point(10,[V.dot(pos,ax.x),V.dot(pos,ax.y),V.dot(pos,ax.n)]); put(41,sx,42,sy,43,sz,50,Math.atan2(V.dot(x,ax.y),V.dot(x,ax.x))*180/Math.PI); point(210,n);
+                for (const a of attrs) {
+                    const t = G.transform({ type:'TEXT', position:a.position, text:e.attributes?.[a.tag]??a.value, height:a.height, rotation:a.rotation||0, layer:e.layer, color:e.color },m), axes=G.textAxes(t), ta=basis(axes.n), p=t.position;
+                    base('ATTRIB',e,owner); put(100,'AcDbText'); point(10,[V.dot(p,ta.x),V.dot(p,ta.y),V.dot(p,ta.n)]); put(40,t.height,1,esc(t.text),50,Math.atan2(V.dot(axes.x,ta.y),V.dot(axes.x,ta.x))*180/Math.PI,7,'STANDARD'); point(210,axes.n); put(100,'AcDbAttribute',280,0,2,esc(a.tag),70,a.hidden?1:0,73,0,74,0,280,0);
+                }
+                if(attrs.length){base('SEQEND',e,owner);}
+                return;
+            }
+            if (e.type === 'TABLE' || e.type === 'LEADER') { for(const c of K.Production.flattenGeometry(e,doc))writeEntity(c,owner); return; }
+
             if (e.type === 'LINE') {
                 base('LINE', e, owner);
                 put(100, 'AcDbLine');
@@ -442,7 +492,7 @@
             }
             else if (e.type === 'DIMENSION') {
                 const d = G.dimension(e), block = dimMap.get(e.id);
-                if (!block) {
+                if (!block || e.kind && !['aligned','linear'].includes(e.kind)) {
                     for (const s of d.segments)
                         writeEntity({ ...e, type: 'LINE', points: s }, owner);
                     writeEntity({ ...e, ...d.text, type: 'TEXT' }, owner);
@@ -450,12 +500,13 @@
                 }
                 base('DIMENSION', e, owner);
                 put(100, 'AcDbDimension', 2, block.name);
-                const n = V.norm(V.cross(e.normal || [0, 0, 1], V.sub(e.points[1], e.points[0])));
+                const n = V.norm(V.cross(e.normal || [0, 0, 1], e.kind === 'linear' ? e.measureAxis || [1,0,0] : V.sub(e.points[1], e.points[0])));
                 point(10, V.add(e.points[1], V.mul(n, e.offset || 0)));
                 point(11, d.text.position);
-                put(70, 33, 1, e.text ? esc(e.text) : '<>', 3, 'STANDARD', 100, 'AcDbAlignedDimension');
+                put(70, e.kind === 'linear' ? 32 : 33, 1, e.text ? esc(e.text) : '<>', 3, 'STANDARD', 100, 'AcDbAlignedDimension');
                 point(13, e.points[0]);
                 point(14, e.points[1]);
+                if(e.kind==='linear')put(100,'AcDbRotatedDimension',50,Math.atan2((e.measureAxis||[1,0,0])[1],(e.measureAxis||[1,0,0])[0])*180/Math.PI);
             }
             else if (e.type === 'HATCH') {
                 const normal = e.normal || faceNormal(e.points), ax = basis(normal), p = e.points.map(v => [V.dot(v, ax.x), V.dot(v, ax.y), V.dot(v, ax.n)]), solid = e.pattern === 'solid';
@@ -463,10 +514,10 @@
                 put(100, 'AcDbHatch');
                 point(10, [0, 0, p[0][2]]);
                 point(210, normal);
-                put(2, solid ? 'SOLID' : 'ANSI31', 70, solid ? 1 : 0, 71, 0, 91, 1, 92, 2, 72, 0, 73, 1, 93, p.length);
-                for (const v of p)
-                    put(10, v[0], 20, v[1]);
-                put(97, 0, 75, 0, 76, 1);
+                const loops = e.loops || [e.points];
+                put(2, solid ? 'SOLID' : 'ANSI31', 70, solid ? 1 : 0, 71, 0, 91, loops.length);
+                for(const loop of loops){put(92,2,72,0,73,1,93,loop.length);for(const v of loop)put(10,V.dot(v,ax.x),20,V.dot(v,ax.y));put(97,0);}
+                put(75, 0, 76, 1);
                 if (!solid) {
                     const angles = e.pattern === 'cross' ? [e.angle || 0, (e.angle || 0) + Math.PI / 2] : [e.angle ?? Math.PI / 4];
                     put(52, (e.angle ?? Math.PI / 4) * 180 / Math.PI, 41, 1, 77, 0, 78, angles.length);
@@ -488,10 +539,16 @@
             }
         }
         put(0, 'SECTION', 2, 'BLOCKS');
-        for (const b of [{ name: '*Model_Space', handle: modelHandle }, { name: '*Paper_Space', handle: paperHandle }, ...dimensionBlocks]) {
+        for (const b of [{ name: '*Model_Space', handle: modelHandle }, { name: '*Paper_Space', handle: paperHandle }, ...dimensionBlocks, ...userBlocks]) {
             put(0, 'BLOCK', 5, h(), 330, b.handle, 100, 'AcDbEntity', 8, '0', 100, 'AcDbBlockBegin', 2, b.name, 70, b.e ? 1 : 0);
             point(10, [0, 0, 0]);
             put(3, b.name, 1, '');
+            if (b.entities) {
+                for (const e of b.entities) writeEntity(e,b.handle);
+                for (const a of b.attributes || []) {
+                    base('ATTDEF',{layer:'0'},b.handle);put(100,'AcDbText');point(10,a.position);put(40,a.height,1,esc(a.value),50,(a.rotation||0)*180/Math.PI,7,'STANDARD',100,'AcDbAttributeDefinition',280,0,3,esc(a.tag),2,esc(a.tag),70,a.hidden?1:0,73,0,74,0,280,0);
+                }
+            }
             if (b.e) {
                 const d = G.dimension(b.e);
                 for (const s of d.segments)

@@ -1,0 +1,239 @@
+{
+  "suite": "production drafting",
+  "passed": 58,
+  "failed": 0,
+  "tests": [
+    {
+      "name": "production defaults are isolated per drawing",
+      "status": "passed"
+    },
+    {
+      "name": "version 1 projects migrate to version 2 without losing geometry",
+      "status": "passed"
+    },
+    {
+      "name": "block stores local geometry and replaces selected objects with a real reference",
+      "status": "passed"
+    },
+    {
+      "name": "block creation undo restores original entities and removes definition",
+      "status": "passed"
+    },
+    {
+      "name": "shared definition edits update every instance and invalidate cached geometry",
+      "status": "passed"
+    },
+    {
+      "name": "insert applies independent translation, scale and rotation",
+      "status": "passed"
+    },
+    {
+      "name": "nonuniform transformed insert retains definition identity",
+      "status": "passed"
+    },
+    {
+      "name": "nested blocks expand correctly",
+      "status": "passed"
+    },
+    {
+      "name": "cyclic blocks roll back atomically",
+      "status": "passed"
+    },
+    {
+      "name": "missing nested blocks reject on load",
+      "status": "passed"
+    },
+    {
+      "name": "malformed definition geometry rejects on load",
+      "status": "passed"
+    },
+    {
+      "name": "duplicate definition names reject",
+      "status": "passed"
+    },
+    {
+      "name": "singular insert matrix rejects",
+      "status": "passed"
+    },
+    {
+      "name": "projective insert transform rejects",
+      "status": "passed"
+    },
+    {
+      "name": "block attributes are per instance and retain definitions",
+      "status": "passed"
+    },
+    {
+      "name": "attribute injection names reject",
+      "status": "passed"
+    },
+    {
+      "name": "exploding nested inserts preserves transformed geometry and is undoable",
+      "status": "passed"
+    },
+    {
+      "name": "native block project round trips exactly",
+      "status": "passed"
+    },
+    {
+      "name": "associative dimensions follow line endpoint changes",
+      "status": "passed"
+    },
+    {
+      "name": "deleted dimension anchor is marked broken rather than discarded",
+      "status": "passed"
+    },
+    {
+      "name": "linear dimensions measure projected distance rather than aligned length",
+      "status": "passed"
+    },
+    {
+      "name": "radius and diameter measurements are distinct",
+      "status": "passed"
+    },
+    {
+      "name": "angular dimension measures actual ray angle",
+      "status": "passed"
+    },
+    {
+      "name": "ordinate dimensions use selected origin and coordinate axis",
+      "status": "passed"
+    },
+    {
+      "name": "dimension style controls precision and units factor",
+      "status": "passed"
+    },
+    {
+      "name": "invalid dimension style precision rejects",
+      "status": "passed"
+    },
+    {
+      "name": "solid hatch islands use even-odd fill with correct area",
+      "status": "passed"
+    },
+    {
+      "name": "nested hatch island restores filled inner area",
+      "status": "passed"
+    },
+    {
+      "name": "hatch pattern segments do not cross an island interior",
+      "status": "passed"
+    },
+    {
+      "name": "hatch density limits reject without freezing",
+      "status": "passed"
+    },
+    {
+      "name": "transformed hatch holes stay on the transformed plane",
+      "status": "passed"
+    },
+    {
+      "name": "associated hatch updates boundaries when source changes",
+      "status": "passed"
+    },
+    {
+      "name": "table geometry contains actual rows, columns and cells",
+      "status": "passed"
+    },
+    {
+      "name": "table edit and native persistence retain values",
+      "status": "passed"
+    },
+    {
+      "name": "ragged table cells reject",
+      "status": "passed"
+    },
+    {
+      "name": "leader produces arrow lines and text",
+      "status": "passed"
+    },
+    {
+      "name": "stretch moves only crossing vertices",
+      "status": "passed"
+    },
+    {
+      "name": "unsupported partial stretch rolls back entire operation",
+      "status": "passed"
+    },
+    {
+      "name": "line break retains both portions with unique IDs",
+      "status": "passed"
+    },
+    {
+      "name": "circle break produces retained counter-clockwise arc",
+      "status": "passed"
+    },
+    {
+      "name": "arc break preserves two analytic remainders",
+      "status": "passed"
+    },
+    {
+      "name": "3D alignment maps two points with requested scaling",
+      "status": "passed"
+    },
+    {
+      "name": "UCS transforms coordinates and reverses exactly",
+      "status": "passed"
+    },
+    {
+      "name": "non-orthogonal UCS rejects",
+      "status": "passed"
+    },
+    {
+      "name": "reference snapshot unit conversion is applied once",
+      "status": "passed"
+    },
+    {
+      "name": "reference unload hides and load restores geometry",
+      "status": "passed"
+    },
+    {
+      "name": "reference bind retains its block and removes external link",
+      "status": "passed"
+    },
+    {
+      "name": "reference reload replaces snapshot and undo restores it",
+      "status": "passed"
+    },
+    {
+      "name": "reference detach removes instances and its definition",
+      "status": "passed"
+    },
+    {
+      "name": "scaled layout SVG encodes real millimeter page dimensions",
+      "status": "passed"
+    },
+    {
+      "name": "viewport scaling converts drawing units to paper mm",
+      "status": "passed"
+    },
+    {
+      "name": "layouts contain independent clipped viewports",
+      "status": "passed"
+    },
+    {
+      "name": "viewport beyond page rejects",
+      "status": "passed"
+    },
+    {
+      "name": "layout title and cell text cannot inject SVG markup",
+      "status": "passed"
+    },
+    {
+      "name": "DXF emits real BLOCK and INSERT records, not flattened clones",
+      "status": "passed"
+    },
+    {
+      "name": "DXF attribute definitions and per-instance values survive round trip",
+      "status": "passed"
+    },
+    {
+      "name": "DXF multiple hatch polyline boundaries survive",
+      "status": "passed"
+    },
+    {
+      "name": "DXF linear dimensions retain linear rather than aligned behavior",
+      "status": "passed"
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "suite": "independent production DXF checks",
+  "passed": 8,
+  "failed": 0,
+  "tests": [
+    {
+      "name": "independent audit: production-blocks.dxf",
+      "status": "passed"
+    },
+    {
+      "name": "independent audit: production-attributes.dxf",
+      "status": "passed"
+    },
+    {
+      "name": "independent audit: production-holes.dxf",
+      "status": "passed"
+    },
+    {
+      "name": "independent audit: production-dimensions.dxf",
+      "status": "passed"
+    },
+    {
+      "name": "standard INSERT resolves to expected transformed LINE",
+      "status": "passed"
+    },
+    {
+      "name": "standard ATTDEF and ATTRIB preserve tag/default/instance value",
+      "status": "passed"
+    },
+    {
+      "name": "standard HATCH contains two editable polyline boundary paths",
+      "status": "passed"
+    },
+    {
+      "name": "standard rotated dimension reports projected measurement 30",
+      "status": "passed"
+    }
+  ]
+}
