@@ -1,0 +1,44 @@
+name: Prepare native GPU validation runtime
+on:
+  push:
+    branches: [uno-progpu-port]
+    paths: ['.github/workflows/uno-gpu-validation-env.yml']
+permissions:
+  contents: read
+jobs:
+  runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Install software Vulkan validation driver
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y mesa-vulkan-drivers libvulkan1 vulkan-tools xdotool
+          mkdir -p runtime/lib
+          python3 - <<'PY'
+          import pathlib, subprocess, shutil, re
+          root=pathlib.Path('runtime/lib')
+          queue=[pathlib.Path('/usr/lib/x86_64-linux-gnu/libvulkan_lvp.so'), pathlib.Path('/usr/lib/x86_64-linux-gnu/libvulkan.so.1')]
+          seen=set()
+          skip={'libc.so.6','libm.so.6','libpthread.so.0','libdl.so.2','librt.so.1','ld-linux-x86-64.so.2'}
+          while queue:
+              path=queue.pop()
+              if path.name in seen or path.name in skip: continue
+              seen.add(path.name)
+              shutil.copy2(path,root/path.name)
+              text=subprocess.check_output(['ldd',str(path)],text=True)
+              for m in re.finditer(r'=> (/\S+)',text): queue.append(pathlib.Path(m.group(1)))
+          print('PACKAGED',sorted(seen))
+          print(subprocess.check_output(['dpkg-query','-W','mesa-vulkan-drivers','libvulkan1'],text=True))
+          PY
+          cp /usr/bin/xdotool runtime/
+          cp /usr/lib/x86_64-linux-gnu/libxdo.so.3 runtime/lib/
+          tar -czf native-gpu-validation.tar.gz runtime
+          sha256sum native-gpu-validation.tar.gz
+          du -h native-gpu-validation.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-gpu-validation-runtime
+          path: native-gpu-validation.tar.gz
+          retention-days: 2
+          compression-level: 0
