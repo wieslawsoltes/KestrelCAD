@@ -1,0 +1,43 @@
+name: Prepare Uno compiler environment
+on:
+  push:
+    branches: [uno-progpu-port]
+    paths: ['.github/workflows/uno-bootstrap.yml']
+permissions:
+  contents: read
+jobs:
+  compiler:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1
+        with:
+          dotnet-version: '10.0.400'
+      - name: Restore pinned native desktop dependencies
+        shell: bash
+        run: |
+          dotnet new install Uno.Templates::6.7.22
+          dotnet new unoapp -o Probe -n Probe -preset blank -platforms desktop -tfm net10.0
+          cd Probe
+          dotnet add Probe/Probe.csproj package ProGPU.Backend --version 0.1.0-preview.62
+          dotnet add Probe/Probe.csproj package Jint --version 4.16.1
+          dotnet restore Probe/Probe.csproj -r linux-x64 -p:SelfContained=true
+          dotnet build Probe/Probe.csproj -c Release -f net10.0-desktop -r linux-x64 -p:SelfContained=true
+          dotnet restore Probe/Probe.csproj -r win-x64 -p:SelfContained=true
+      - name: Package compiler and dependency cache for local validation
+        shell: bash
+        run: |
+          mkdir -p transfer
+          tar -C /usr/share/dotnet -czf transfer/dotnet10.tar.gz dotnet LICENSE.txt ThirdPartyNotices.txt host/fxr/10.0.11 sdk/10.0.400 shared/Microsoft.NETCore.App/10.0.11 shared/Microsoft.AspNetCore.App/10.0.11 packs/Microsoft.NETCore.App.Ref/10.0.11 packs/Microsoft.AspNetCore.App.Ref/10.0.11 packs/NETStandard.Library.Ref
+          tar -C "$HOME/.nuget" -czf transfer/nuget-cache.tar.gz packages
+          git clone --depth 1 https://github.com/wieslawsoltes/ProGPU.git ProGPU
+          tar --exclude='.git' -czf transfer/reference-source.tar.gz ProGPU/src/ProGPU.Backend ProGPU/src/ProGPU.Uno Probe
+          sha256sum transfer/* > transfer/SHA256SUMS
+          du -h transfer/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: uno-compiler-environment
+          path: transfer/
+          retention-days: 2
+          compression-level: 0
+          if-no-files-found: error
