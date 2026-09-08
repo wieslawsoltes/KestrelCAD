@@ -9562,21 +9562,24 @@ K.installFieldsUI=function(App){const run=App.prototype.run;
         }
         else
             this.toast('Opened ' + file.name); return { data, report }; }
-        insertData(data) { K.validateProject(data); const factor = UNIT_MM[data.units] / UNIT_MM[this.doc.units], mapping = new Map(), ids = []; this.doc.transaction('Insert drawing', () => { for (const l of data.layers) {
-            let target = this.doc.layers.find(x => x.name.toLowerCase() === l.name.toLowerCase());
-            if (!target) {
-                target = { ...l, id: K.uid('layer') };
-                this.doc.layers.push(target);
+        insertData(data) {
+            // Normalize and refresh in the source context before freezing any links.
+            // The shared clipboard importer builds a complete ID map and transfers
+            // definitions/styles before remapping fields, anchors and constraints.
+            const source = K.Drawing.from(data), factor = UNIT_MM[source.units] / UNIT_MM[this.doc.units];
+            const sourceData = source.serialize({ includeSource: false });
+            let ids = [];
+            this.doc.transaction('Insert drawing', () => {
+                ids = K.Production.copyInto(this.doc, sourceData, sourceData.entities, M.scale(factor));
+                this.doc.selection = new Set(ids);
+            });
+            this.log('Insert', ids.length + ' entities inserted at their original coordinates; unit conversion ×' + factor + '. Use Move to place them.');
+            if (this.doc.operationWarnings?.length) {
+                this.log('Insert', this.doc.operationWarnings.join(' '));
+                this.toast(this.doc.operationWarnings.join(' '));
             }
-            mapping.set(l.id, target.id);
-        } for (const original of data.entities) {
-            const e = G.transform(original, M.scale(factor));
-            delete e.id;
-            delete e.group;
-            delete e.groupName;
-            e.layer = mapping.get(original.layer);
-            ids.push(this.doc.add(e).id);
-        } this.doc.selection = new Set(ids); }); this.log('Insert', ids.length + ' entities inserted at their original coordinates; unit conversion ×' + factor + '. Use Move to place them.'); }
+            return ids;
+        }
         showImportReport(report) { const skipped = Object.values(report.skipped || {}).reduce((a, b) => a + b, 0), warnings = report.warnings || []; this.log('Import', `${report.created} created · ${skipped} skipped · ${warnings.length} warning(s)`); this.dialog({ title: 'DXF import report', html: `<div class="report-stat-grid"><div class="report-stat"><strong>${report.read.toLocaleString()}</strong><span>Records read</span></div><div class="report-stat"><strong>${report.created.toLocaleString()}</strong><span>Entities created</span></div><div class="report-stat"><strong>${skipped.toLocaleString()}</strong><span>Skipped</span></div></div>${skipped ? `<table class="report-table">${Object.entries(report.skipped).map(([name, count]) => `<tr><td>${esc(name)}</td><td>${count}</td></tr>`).join('')}</table>` : ''}${warnings.length ? warnings.slice(0, 30).map(w => `<div class="dialog-note warning">${esc(w)}</div>`).join('') : '<div class="dialog-note success"><strong>Supported entity data imported</strong>No parser warnings were generated. Always compare critical drawings against the originating CAD application.</div>'}`, submit: 'View drawing', closeOnly: true }); }
         svgDialog() { this.dialog({ title: 'Export vector SVG', html: `<p>Export the visible drawing using a fitted top view or the current 3D projection.</p><div class="form-grid"><div class="form-field"><label>Projection</label><select name="projection"><option value="top">Top / world XY</option><option value="current">Current view</option></select></div>${this.field('width', 'Output width (pixels)', 1600, 'number', 'min="200" max="20000"')}${this.field('height', 'Output height (pixels)', 1131, 'number', 'min="200" max="20000"')}<label class="form-check"><input type="checkbox" name="monochrome" checked>Monochrome</label><label class="form-check"><input type="checkbox" name="sheet" checked>Include sheet border</label></div>`, submit: 'Export SVG', onSubmit: f => { const svg = K.Exchange.writeSVG(this.doc, { width: finite(f.width, 'Width', 200, 20000), height: finite(f.height, 'Height', 200, 20000), camera: f.projection === 'current' ? this.camera : null, monochrome: !!f.monochrome, sheet: !!f.sheet }); this.download(svg, this.filename('svg'), 'image/svg+xml'); this.toast('Vector drawing exported.'); } }); }
         exportPNG() { this.pointer.inside = false; requestAnimationFrame(() => { this.renderer.render(this.doc); const canvas = this.renderer.screenshot(); canvas.toBlob(blob => { if (!blob) {
