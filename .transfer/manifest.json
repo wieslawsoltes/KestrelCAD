@@ -1,0 +1,1 @@
+{"parts":["part-00.b64"],"sha256":"6acf220ba3f59619303dbdb64639735760b580d01da51e906a9d20e12e75e5f5","base":{"src/app.js":"3cad37a25cced72e5f14f68c9e1597917c002e78e57e646eab72954faa62eb3e"},"files":{"src/app.js":"453a22335be4f9920910e78c9aadcabead0a1826bed2fdba2fac6a5290f72606","tests/fields-insert.browser.py":"fb6c8338bb0a46622327dc954802f30d60d7bb2e4346f641dcf52ff3f159d1c3"}}
