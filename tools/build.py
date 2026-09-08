@@ -11,7 +11,7 @@ def build(output: Path) -> None:
     html = (ROOT / 'index.html').read_text()
     css = (ROOT / 'src/style.css').read_text()
     html = re.sub(r'<link rel="stylesheet" href="src/style.css"\s*/?>', lambda _: '<style>\n'+css+'\n</style>', html)
-    worker = '\n'.join((ROOT / 'src' / name).read_text() for name in ('math.js','geometry.js','model.js','exchange.js','production.js','kernel.js', 'constraints.js','dynamic-blocks.js'))
+    worker = '\n'.join((ROOT / 'src' / name).read_text() for name in ('math.js','geometry.js','model.js','exchange.js','production.js','kernel.js', 'constraints.js','dynamic-blocks.js','fonts.js'))
     worker += '\n' + re.sub(r"importScripts\([^;]+;", '', (ROOT / 'src/io-worker.js').read_text())
     script_data = json.dumps(worker).replace('</', '<\\/')
     html = html.replace('</head>', '<script>window.KESTREL_WORKER_SOURCE='+script_data+';</script>\n</head>')

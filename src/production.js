@@ -116,12 +116,12 @@
         const source = K.DynamicBlocks && b.dynamic ? K.DynamicBlocks.evaluate(b, insert.parameters || {}, doc, insert) : b.entities;
         for (const item of source) {
             if (++budget.n > 200000) throw Error('Expanded block entity limit exceeded.');
-            const e = clone(item); if (e.layer === '0') e.layer = insert.layer;
+            const e = clone(item); owners.set(e,doc); if (e.layer === '0') e.layer = insert.layer;
             if (e.color === 'byblock') e.color = insert.color;
             const children = e.type === 'INSERT' ? expand(doc, e, [...stack, b.id], budget, display) : [e];
-            for (const child of children) if (!display || doc.visible(child)) out.push(G.transform(child, insert.matrix));
+            for (const child of children) if (!display || doc.visible(child)){owners.set(child,doc);out.push(G.transform(child, insert.matrix));}
         }
-        for (const a of b.dynamic && K.DynamicBlocks ? [] : b.attributes || []) if (!a.hidden) out.push(G.transform({ type: 'TEXT', position: a.position, text: insert.attributes?.[a.tag] ?? a.value, height: a.height, rotation: a.rotation || 0, layer: insert.layer, color: insert.color, attributeTag: a.tag }, insert.matrix));
+        for (const a of b.dynamic && K.DynamicBlocks ? [] : b.attributes || []) if (!a.hidden) {const text={...a,type:'TEXT',position:a.position,text:insert.attributes?.[a.tag]??a.value,height:a.height,rotation:a.rotation||0,layer:insert.layer,color:insert.color,attributeTag:a.tag};owners.set(text,doc);out.push(G.transform(text,insert.matrix));}
         return out;
     }
     const expansionCache = new WeakMap();
@@ -327,7 +327,7 @@
             out.push(`<defs><clipPath id="vp${i}"><rect x="${v.x}" y="${v.y}" width="${v.width}" height="${v.height}"/></clipPath></defs><g clip-path="url(#vp${i})" fill="none" stroke="#111" stroke-linecap="round" stroke-linejoin="round">`);
             for (const e of doc.entities) if (doc.visible(e) && !v.frozenLayers?.includes(e.layer)) { const g = doc.geometry(e), width = e.lineweight || doc.layer(e).lineweight || .25;
                 if (g.segments.length) out.push(`<path stroke-width="${width}" d="${g.segments.map(s => 'M'+at(s[0]).join(',')+'L'+at(s[1]).join(',')).join('')}"/>`);
-                for (const t of g.texts) { const [x,y] = at(t.position); out.push(`<text x="${x}" y="${y}" stroke="none" fill="#111" font-family="Arial,sans-serif" font-size="${t.height * factor}" text-anchor="${t.align === 'center' ? 'middle' : t.align === 'right' ? 'end' : 'start'}" transform="rotate(${-(t.rotation || 0) * 180 / Math.PI} ${x} ${y})">${xml(t.text)}</text>`); }
+                for (const t of g.texts) { if(K.Fonts && t.fontFamily){out.push(K.Fonts.svgText(t,at,"#111",xml));continue;}const [x,y] = at(t.position); out.push(`<text x="${x}" y="${y}" stroke="none" fill="#111" font-family="Arial,sans-serif" font-size="${t.height * factor}" text-anchor="${t.align === 'center' ? 'middle' : t.align === 'right' ? 'end' : 'start'}" transform="rotate(${-(t.rotation || 0) * 180 / Math.PI} ${x} ${y})">${xml(t.text)}</text>`); }
                 if (e.type === 'HATCH') for (const t of g.triangles) out.push(`<polygon points="${t.points.map(p=>at(p).join(',')).join(' ')}" fill="#333" stroke="none"/>`);
             } out.push('</g>'); if (v.border !== false) out.push(`<rect x="${v.x}" y="${v.y}" width="${v.width}" height="${v.height}" fill="none" stroke="#555" stroke-width="0.18"/>`);
         }

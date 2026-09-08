@@ -137,9 +137,10 @@
     }
     function evaluate(block, overrides={}, doc=null, instance=null) {
         const {values,expression:f}=resolve(block,overrides), d=block.dynamic;
+        const transform=(e,m)=>{if(doc)P.owners.set(e,doc);const out=G.transform(e,m);if(doc)P.owners.set(out,doc);return out;};
         if(block.entities.length+(instance?(block.attributes||[]).length:0)>LIMIT)throw Error("Dynamic block expansion exceeds 20,000 entities.");
         let rows=block.entities.map(e=>({e:clone(e),source:e.id}));
-        if(instance)for(const a of block.attributes||[])if(!a.hidden)rows.push({source:'attribute:'+a.tag,e:{id:'attribute:'+a.tag,type:'TEXT',position:clone(a.position),height:a.height,rotation:a.rotation||0,text:instance.attributes?.[a.tag]??a.value,attributeTag:a.tag,layer:'0',color:'byblock'}});
+        if(instance)for(const a of block.attributes||[])if(!a.hidden)rows.push({source:'attribute:'+a.tag,e:{...clone(a),id:'attribute:'+a.tag,type:'TEXT',position:clone(a.position),height:a.height,rotation:a.rotation||0,text:instance.attributes?.[a.tag]??a.value,attributeTag:a.tag,layer:'0',color:'byblock'}});
         // Actions are ordered and always start from the definition, never last frame.
         for (let actionIndex=0;actionIndex<d.actions.length;actionIndex++) {
             const a=d.actions[actionIndex];
@@ -157,7 +158,7 @@
                 for(let col=0;col<3;col++)for(let row=0;row<3;row++)m[col*4+row]-=2*n[col]*n[row];
                 matrix=M.around(a.origin||[0,0,0],m);
             }
-            if(matrix) {rows=rows.map(r=>selected.has(r.source)?{...r,e:G.transform(r.e,matrix)}:r);continue;}
+            if(matrix) {rows=rows.map(r=>selected.has(r.source)?{...r,e:transform(r.e,matrix)}:r);continue;}
             if(a.type==='stretch') {
                 const inside=p=>p.every((v,i)=>v>=a.min[i]-1e-9&&v<=a.max[i]+1e-9);
                 rows=rows.map(r=>{
@@ -169,10 +170,10 @@
                     }
                     if(e.type==='POINT'||e.type==='TEXT'||e.type==='INSERT') {
                         const p=e.type==='INSERT'?M.point(e.matrix,[0,0,0]):e.position;
-                        return inside(p)?{...r,e:G.transform(e,M.translation(...delta))}:r;
+                        return inside(p)?{...r,e:transform(e,M.translation(...delta))}:r;
                     }
                     const points=G.geometry(e).points||[];
-                    if(points.length&&points.every(inside))return {...r,e:G.transform(e,M.translation(...delta))};
+                    if(points.length&&points.every(inside))return {...r,e:transform(e,M.translation(...delta))};
                     if(points.some(inside))throw Error('Cannot partially stretch '+e.type+'. Use a move, scale or rotate action.');
                     return r;
                 });
@@ -182,7 +183,7 @@
                 if(!Number.isInteger(columns)||!Number.isInteger(countRows)||columns<1||countRows<1||columns*countRows>LIMIT)throw Error('Array counts require positive integers within the 20,000-item limit.');
                 const source=rows.filter(r=>selected.has(r.source));
                 if(rows.length+source.length*(columns*countRows-1)>LIMIT)throw Error('Dynamic block expansion exceeds 20,000 entities.');
-                const extra=[];for(let y=0;y<countRows;y++)for(let x=0;x<columns;x++)if(x||y)for(const r of source){const e=G.transform(r.e,M.translation(x*dx,y*dy,0));e.id='dyn'+actionIndex+'_'+y+'_'+x+'_'+e.id;if(e.id.length>128)throw Error('Chained arrays exceed identifier depth.');extra.push({...r,e});}
+                const extra=[];for(let y=0;y<countRows;y++)for(let x=0;x<columns;x++)if(x||y)for(const r of source){const e=transform(r.e,M.translation(x*dx,y*dy,0));e.id='dyn'+actionIndex+'_'+y+'_'+x+'_'+e.id;if(e.id.length>128)throw Error('Chained arrays exceed identifier depth.');extra.push({...r,e});}
                 rows.push(...extra);
             }
         }

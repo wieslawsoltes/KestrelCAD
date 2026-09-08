@@ -215,9 +215,9 @@
                             continue;
                         const raw = t === 'MTEXT' ? values(r, 3).join('') + str(r, 1) : str(r, 1);
                         const align = t === 'MTEXT' ? [2, 5, 8].includes(num(r, 71)) ? 'center' : [3, 6, 9].includes(num(r, 71)) ? 'right' : 'left' : num(r, 72) === 1 ? 'center' : num(r, 72) === 2 ? 'right' : 'left';
-                        emit({ type: 'TEXT', position: t === 'MTEXT' ? pt(r) : ocs(align !== 'left' && has(r, 11) ? pt(r, 11) : pt(r), normal(r)), text: t === 'MTEXT' ? stripMText(raw) : decode(raw), attributeTag: t === 'ATTDEF' ? decode(str(r, 2)) : undefined, height: Math.max(EPS, num(r, 40, 10)), rotation: t === 'MTEXT' && has(r, 11) ? Math.atan2(num(r, 21), num(r, 11)) : num(r, 50) * Math.PI / 180, align, direction: t === 'MTEXT' && has(r, 11) ? pt(r, 11) : undefined, normal: normal(r) }, r, m, inherit);
-                        if (t === 'MTEXT' && !report.warnings.includes('MTEXT formatting uses the browser sans-serif font.'))
-                            report.warnings.push('MTEXT formatting uses the browser sans-serif font.');
+                        emit({ type: 'TEXT', position: t === 'MTEXT' ? pt(r) : ocs(align !== 'left' && has(r, 11) ? pt(r, 11) : pt(r), normal(r)), text: t === 'MTEXT' ? stripMText(raw) : decode(raw), attributeTag: t === 'ATTDEF' ? decode(str(r, 2)) : undefined, textStyle:decode(str(r,7,'STANDARD')),widthFactor:t==='MTEXT'?1:num(r,41,1),oblique:t==='MTEXT'?0:num(r,51),backwards:t==='MTEXT'?false:!!(num(r,71)&2),upsideDown:t==='MTEXT'?false:!!(num(r,71)&4),lineSpacing:t==='MTEXT'?1.35*num(r,44,1):1.35, height: Math.max(EPS, num(r, 40, 10)), rotation: t === 'MTEXT' && has(r, 11) ? Math.atan2(num(r, 21), num(r, 11)) : num(r, 50) * Math.PI / 180, align, direction: t === 'MTEXT' && has(r, 11) ? pt(r, 11) : undefined, normal: normal(r) }, r, m, inherit);
+                        if (t === 'MTEXT' && !report.warnings.includes('MTEXT inline formatting is approximated; named font styles are retained.'))
+                            report.warnings.push('MTEXT inline formatting is approximated; named font styles are retained.');
                     }
                     else if (t === '3DFACE' || t === 'SOLID' || t === 'TRACE') {
                         let points = [pt(r), pt(r, 11), pt(r, 12), pt(r, 13)];
@@ -326,12 +326,14 @@
             }
         }
         if (K.Production) {
+            doc.production.textstyles = recs.filter(r=>r.section==='TABLES'&&r.type==='STYLE').filter(r=>!(num(r,70)&1)).map(r=>({name:decode(str(r,2,'STANDARD')),font:decode(str(r,3,'')),bigFont:decode(str(r,4,'')),height:Math.max(0,num(r,40)),width:Math.max(.001,num(r,41,1)),oblique:num(r,50),backwards:!!(num(r,71)&2),upsideDown:!!(num(r,71)&4),vertical:!!(num(r,70)&4)}));
+            if(!doc.production.textstyles.some(s=>s.name.toLowerCase()==='standard'))doc.production.textstyles.push({name:'STANDARD',font:'',height:0,width:1,oblique:0});
             doc.production.dimstyles = recs.filter(r => r.section === 'TABLES' && r.type === 'DIMSTYLE').map(r => ({ name: decode(str(r, 2, 'STANDARD')), textHeight: Math.max(1e-7, num(r, 140, 2.5)), precision: Math.max(0, Math.min(8, Math.round(num(r, 271, 2)))), scale: Math.max(1e-7, num(r, 144, 1)), prefix: '', suffix: '' }));
             if (!doc.production.dimstyles.length) doc.production.dimstyles = K.Production.defaults().dimstyles;
             for (const block of blocks.values()) {
                 const start = doc.entities.length;
                 readRecords(block.records, null, null, [block.name]);
-                const entities = doc.entities.splice(start), attributes = entities.filter(e => e.attributeTag).map(e => ({ tag: e.attributeTag, value: e.text, position: e.position, height: e.height, rotation: e.rotation || 0 }));
+                const entities = doc.entities.splice(start), attributes = entities.filter(e => e.attributeTag).map(e => ({ tag:e.attributeTag, value:e.text, position:e.position, height:e.height, rotation:e.rotation||0, textStyle:e.textStyle, widthFactor:e.widthFactor, oblique:e.oblique, backwards:e.backwards, upsideDown:e.upsideDown, vertical:e.vertical }));
                 doc.production.blocks.push({ id: block.id, name: block.name.replace(/[^a-zA-Z0-9_$ .-]/g, '_') || block.id, entities: entities.filter(e => !e.attributeTag), attributes });
             }
         }
@@ -366,7 +368,10 @@
             put(0, 'LAYER', 5, h(), 100, 'AcDbSymbolTableRecord', 100, 'AcDbLayerTableRecord', 2, esc(l.name), 70, l.locked ? 4 : 0, 62, l.visible ? 7 : -7, 420, parseInt(l.color.slice(1), 16), 6, /center/i.test(l.linetype) ? 'Center' : /dash/i.test(l.linetype) ? 'Dashed' : 'Continuous', 370, Math.round((l.lineweight || .25) * 100));
         }
         put(0, 'ENDTAB');
-        put(0, 'TABLE', 2, 'STYLE', 5, h(), 100, 'AcDbSymbolTable', 70, 1, 0, 'STYLE', 5, h(), 100, 'AcDbSymbolTableRecord', 100, 'AcDbTextStyleTableRecord', 2, 'STANDARD', 70, 0, 40, 0, 41, 1, 50, 0, 71, 0, 42, 2.5, 3, 'txt', 4, '', 0, 'ENDTAB');
+        const fontStyles=K.Fonts?K.Fonts.styles(doc):doc.production?.textstyles||[{name:'STANDARD',font:'',height:0,width:1,oblique:0}];
+        put(0,'TABLE',2,'STYLE',5,h(),100,'AcDbSymbolTable',70,fontStyles.length);
+        for(const s of fontStyles)put(0,'STYLE',5,h(),100,'AcDbSymbolTableRecord',100,'AcDbTextStyleTableRecord',2,esc(s.name),70,s.vertical?4:0,40,s.height||0,41,s.width||1,50,s.oblique||0,71,(s.backwards?2:0)|(s.upsideDown?4:0),42,2.5,3,esc(s.font||''),4,esc(s.bigFont||''));
+        put(0,'ENDTAB');
         put(0, 'TABLE', 2, 'DIMSTYLE', 5, h(), 100, 'AcDbSymbolTable', 100, 'AcDbDimStyleTable', 70, 1, 0, 'DIMSTYLE', 105, h(), 100, 'AcDbSymbolTableRecord', 100, 'AcDbDimStyleTableRecord', 2, 'STANDARD', 70, 0, 40, 1, 41, doc.entities.find(e => e.type === 'DIMENSION')?.textHeight || 2.5, 140, doc.entities.find(e => e.type === 'DIMENSION')?.textHeight || 2.5, 147, 1, 271, 2, 0, 'ENDTAB');
         put(0, 'TABLE', 2, 'APPID', 5, h(), 100, 'AcDbSymbolTable', 70, 1, 0, 'APPID', 5, h(), 100, 'AcDbSymbolTableRecord', 100, 'AcDbRegAppTableRecord', 2, 'ACAD', 70, 0, 0, 'ENDTAB');
         put(0, 'TABLE', 2, 'BLOCK_RECORD', 5, h(), 100, 'AcDbSymbolTable', 70, 2 + dimensionBlocks.length + userBlocks.length);
@@ -388,8 +393,8 @@
                 base('INSERT',e,owner); put(100,'AcDbBlockReference',2,b.name,66,attrs.length?1:0);
                 point(10,[V.dot(pos,ax.x),V.dot(pos,ax.y),V.dot(pos,ax.n)]); put(41,sx,42,sy,43,sz,50,Math.atan2(V.dot(x,ax.y),V.dot(x,ax.x))*180/Math.PI); point(210,n);
                 for (const a of attrs) {
-                    const t = G.transform({ type:'TEXT', position:a.position, text:e.attributes?.[a.tag]??a.value, height:a.height, rotation:a.rotation||0, layer:e.layer, color:e.color },m), axes=G.textAxes(t), ta=basis(axes.n), p=t.position;
-                    base('ATTRIB',e,owner); put(100,'AcDbText'); point(10,[V.dot(p,ta.x),V.dot(p,ta.y),V.dot(p,ta.n)]); put(40,t.height,1,esc(t.text),50,Math.atan2(V.dot(axes.x,ta.y),V.dot(axes.x,ta.x))*180/Math.PI,7,'STANDARD'); point(210,axes.n); put(100,'AcDbAttribute',280,0,2,esc(a.tag),70,a.hidden?1:0,73,0,74,0,280,0);
+                    const t = G.transform({ ...(K.Fonts?K.Fonts.properties(a,doc):a), type:'TEXT', position:a.position, text:e.attributes?.[a.tag]??a.value, height:a.height, rotation:a.rotation||0, layer:e.layer, color:e.color },m), axes=G.textAxes(t), ta=basis(axes.n), p=t.position;
+                    base('ATTRIB',e,owner); put(100,'AcDbText'); point(10,[V.dot(p,ta.x),V.dot(p,ta.y),V.dot(p,ta.n)]); put(40,t.height,1,esc(t.text),50,Math.atan2(V.dot(axes.x,ta.y),V.dot(axes.x,ta.x))*180/Math.PI,7,esc(t.textStyle||'STANDARD'),41,t.widthFactor||1,51,t.oblique||0,71,(t.backwards?2:0)|(t.upsideDown?4:0)); point(210,axes.n); put(100,'AcDbAttribute',280,0,2,esc(a.tag),70,a.hidden?1:0,73,0,74,0,280,0);
                 }
                 if(attrs.length){base('SEQEND',e,owner);}
                 return;
@@ -477,13 +482,14 @@
                     point(10, v);
             }
             else if (e.type === 'TEXT') {
+                if(K.Fonts)e=K.Fonts.properties(e,doc);
                 const lines = (e.text || '').split('\n'), axes = G.textAxes(e), normal = axes.n, ax = basis(normal), rotation = Math.atan2(V.dot(axes.x, ax.y), V.dot(axes.x, ax.x));
                 for (let i = 0; i < lines.length; i++) {
-                    const pos = V.add(e.position, V.mul(axes.y, -i * (e.height || 10) * 1.35)), ocs = [V.dot(pos, ax.x), V.dot(pos, ax.y), V.dot(pos, ax.n)];
+                    const pos = V.add(e.position, V.mul(axes.y, -i * (e.height || 10) * (e.lineSpacing||1.35))), ocs = [V.dot(pos, ax.x), V.dot(pos, ax.y), V.dot(pos, ax.n)];
                     base('TEXT', e, owner);
                     put(100, 'AcDbText');
                     point(10, ocs);
-                    put(40, e.height || 10, 1, esc(lines[i]), 50, rotation * 180 / Math.PI, 41, 1, 7, 'STANDARD', 72, e.align === 'center' ? 1 : e.align === 'right' ? 2 : 0);
+                    put(40, e.height || 10, 1, esc(lines[i]), 50, rotation * 180 / Math.PI, 41, e.widthFactor||1, 51, e.oblique||0, 71, (e.backwards?2:0)|(e.upsideDown?4:0), 7, esc(e.textStyle||'STANDARD'), 72, e.align === 'center' ? 1 : e.align === 'right' ? 2 : 0);
                     if (e.align && e.align !== 'left')
                         point(11, ocs);
                     point(210, normal);
@@ -546,7 +552,7 @@
             if (b.entities) {
                 for (const e of b.entities) writeEntity(e,b.handle);
                 for (const a of b.attributes || []) {
-                    base('ATTDEF',{layer:'0'},b.handle);put(100,'AcDbText');point(10,a.position);put(40,a.height,1,esc(a.value),50,(a.rotation||0)*180/Math.PI,7,'STANDARD',100,'AcDbAttributeDefinition',280,0,3,esc(a.tag),2,esc(a.tag),70,a.hidden?1:0,73,0,74,0,280,0);
+                    base('ATTDEF',{layer:'0'},b.handle);put(100,'AcDbText');point(10,a.position);put(40,a.height,1,esc(a.value),50,(a.rotation||0)*180/Math.PI,7,esc(a.textStyle||'STANDARD'),41,a.widthFactor||1,51,a.oblique||0,71,(a.backwards?2:0)|(a.upsideDown?4:0),100,'AcDbAttributeDefinition',280,0,3,esc(a.tag),2,esc(a.tag),70,a.hidden?1:0,73,0,74,0,280,0);
                 }
             }
             if (b.e) {
@@ -596,6 +602,7 @@
             if (g.segments.length)
                 svg.push(`<path d="${g.segments.map(s => 'M' + fmt(project(s[0])) + 'L' + fmt(project(s[1]))).join('')}"${/dash|center/i.test(e.linetype === 'ByLayer' ? layer.linetype : e.linetype || '') ? ' stroke-dasharray="12 5"' : ''}/>`);
             for (const t of g.texts) {
+                if(K.Fonts && t.fontFamily){svg.push(K.Fonts.svgText(t,project,color,xml));continue;}
                 const p = project(t.position), hh = camera ? Math.hypot(...V.sub(project(V.add(t.position, [0, t.height || 10, 0])), p).slice(0, 2)) : (t.height || 10) * scale, rot = -(t.rotation || 0) * 180 / Math.PI;
                 const lines = (t.text || '').split('\n');
                 svg.push(`<text x="${p[0]}" y="${p[1]}" fill="${color}" stroke="none" font-family="Arial,sans-serif" font-size="${Math.max(.5, hh)}" text-anchor="${t.align === 'center' ? 'middle' : t.align === 'right' ? 'end' : 'start'}" transform="rotate(${rot} ${p[0]} ${p[1]})">${lines.map((line, i) => `<tspan x="${p[0]}" dy="${i ? hh * 1.35 : 0}">${xml(line)}</tspan>`).join('')}</text>`);
