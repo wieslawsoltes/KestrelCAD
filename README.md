@@ -74,7 +74,7 @@ STEP/IGES exchange uses millimeters with explicit drawing-unit conversion. IGES 
 
 The baseline 3D tools create **polygon meshes**: primitives, extrude/revolve, BSP mesh union/subtract/intersect and section lines. These are not ACIS solids or exact analytic models. Mesh Boolean degeneracies and non-manifold results remain possible; check exported parts independently before manufacturing.
 
-Native `.kcad` files retain supported editable objects and production metadata, but not undo history. DXF exchange reads ASCII/text DXF and writes AC1015/R2000. It supports a documented subset, not arbitrary lossless editing. Standard blocks/attributes and polyline hatch islands are preserved by v2; new table/leader and non-linear dimension modes export as display geometry. UCS, associations and layouts are native-only. Unsupported imported objects are reported. Keep the original drawing.
+Native `.kcad` files retain supported editable objects and production metadata, but not undo history. DXF exchange reads ASCII and binary DXF; compatibility export writes the supported AC1015/R2000 subset. Imported originals can instead be saved through the guarded source-record editor described below. It supports a documented subset, not arbitrary lossless editing. Standard blocks/attributes and polyline hatch islands are preserved by v2; new table/leader and non-linear dimension modes export as display geometry. UCS, associations and layouts are native-only. Unsupported imported objects are reported. Keep the original drawing.
 
 DWG requires separately installed GNU LibreDWG `dwg2dxf` / `dxf2dwg` executables and the local server. The optional bridge is not available on GitHub Pages. Neither codec is bundled; real native DWG conversion has not been verified here. The supported DXF subset remains the fidelity bottleneck even with a codec.
 
@@ -104,3 +104,16 @@ Named style definitions, typography overrides, clipboard transfer and supported
 DXF STYLE/TEXT records are preserved. SHX glyph strokes are real drawing geometry
 and self-contained SVG paths; missing fonts/glyphs are reported. Font files are not
 bundled or included in project downloads. See [font workflows and fidelity limits](docs/FONTS.md).
+
+## Original-file retention and binary DXF
+
+The Exchange ribbon provides `SOURCEORIGINAL`, `SOURCEINFO`, `DXFSAVE`,
+`DXFEXPORT` and `DXFBINARY`. Opening a DXF preserves its entire original file,
+including unknown records, alongside editable supported geometry in the native
+project. Guarded DXF saves patch supported edits while retaining other records;
+unsupported changes refuse rather than silently discard content. Compatibility
+export is explicitly acknowledged for imported drawings. Binary DXF uses real
+typed records, including legacy group codes and exact 64-bit metadata values.
+Original DWG bytes and converter DXF are retained separately when the optional
+codec is available; this is not unrestricted lossless DWG editing.
+See [source fidelity, commands and supported edit boundaries](docs/SOURCE-DOCUMENTS.md).

@@ -2280,13 +2280,13 @@
             this.worker = null;
         } }
         io(action, payload, name = 'Drawing') { if (!this.worker)
-            return Promise.resolve().then(() => action === 'parse-dxf' ? K.Exchange.parseDXF(payload, name) : K.Exchange.writeDXF(payload)); return new Promise((resolve, reject) => { const id = ++this.ioSequence, timer = setTimeout(() => { this.pendingIO.delete(id); reject(Error('File processing exceeded its 90-second safety limit.')); }, 90000); this.pendingIO.set(id, { resolve, reject, timer }); this.worker.postMessage({ id, action, payload, name }, payload instanceof ArrayBuffer ? [payload] : []); }); }
+            return Promise.resolve().then(() => action === 'parse-dxf' ? K.Exchange.parseDXF(payload, name) : action === 'preserve-dxf' ? K.SourceDocument.exportPreserved(payload) : action === 'binary-dxf' ? K.SourceDocument.toBinary(K.Exchange.writeDXF(payload)) : K.Exchange.writeDXF(payload)); return new Promise((resolve, reject) => { const id = ++this.ioSequence, timer = setTimeout(() => { this.pendingIO.delete(id); reject(Error('File processing exceeded its 90-second safety limit.')); }, 90000); this.pendingIO.set(id, { resolve, reject, timer }); this.worker.postMessage({ id, action, payload, name }, payload instanceof ArrayBuffer ? [payload] : []); }); }
         filename(extension) { return (this.doc.name || 'Drawing').replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').slice(0, 120) + '.' + extension; }
         download(content, name, type = 'application/octet-stream') { const blob = content instanceof Blob ? content : new Blob([content], { type }), url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 30000); }
         saveNative() { this.doc.camera = this.camera.serialize(); this.download(JSON.stringify(this.doc.serialize(), null, 2), this.filename('kcad'), 'application/json'); this.doc.dirty = false; this.refreshTabs(); this.autosave(); this.toast('Editable project downloaded.'); }
         async exportDXF() { this.log('DXF', 'Writing supported entities to ASCII DXF…'); const text = await this.io('write-dxf', this.doc.serialize()); this.download(text, this.filename('dxf'), 'application/dxf'); this.log('DXF', 'Exported ' + this.doc.entities.length + ' native entities; meshes are faceted 3DFACEs.'); this.toast('DXF exported. Meshes are faceted; unsupported application metadata is not included.'); }
-        async openFile(file, mode = 'open') { if (file.size > 64 * 1024 * 1024)
-            throw Error('File size exceeds the 64 MiB import limit.'); this.cancel(false); const ext = file.name.split('.').at(-1).toLowerCase(), name = file.name.replace(/\.[^.]+$/, ''), target = this.doc; this.log('Open', file.name + ' (' + (file.size / 1024).toFixed(1) + ' KiB)'); let data, report = null; if (ext === 'kcad' || ext === 'json') {
+        async openFile(file, mode = 'open') { if (file.size > (/\.(kcad|json)$/i.test(file.name) ? 256 : 64) * 1024 * 1024)
+            throw Error('File size exceeds the import limit (64 MiB exchange, 256 MiB archived native project).'); this.cancel(false); const ext = file.name.split('.').at(-1).toLowerCase(), name = file.name.replace(/\.[^.]+$/, ''), target = this.doc; this.log('Open', file.name + ' (' + (file.size / 1024).toFixed(1) + ' KiB)'); let data, report = null; if (ext === 'kcad' || ext === 'json') {
             data = JSON.parse(await file.text());
             K.validateProject(data);
         }
@@ -2299,12 +2299,14 @@
                 await this.dwgDialog(caps);
                 return;
             }
-            const response = await this.convert('dwg-to-dxf', await file.arrayBuffer());
+            const originalDWG = await file.arrayBuffer(), response = await this.convert('dwg-to-dxf', originalDWG);
             ({ data, report } = await this.io('parse-dxf', await response.arrayBuffer(), name));
-            report.warnings.unshift('DWG was converted to DXF by the local codec. Unsupported DXF content may be omitted.');
+            K.SourceDocument?.withOriginalDWG(data, originalDWG, file.name);
+            report.warnings.unshift('DWG was converted to DXF by the local codec. The original DWG and converted DXF are retained separately; this does not establish lossless DWG editing.');
         }
         else
-            throw Error('Open a .kcad project, ASCII .dxf file, or .dwg file with the optional local codec.'); if (mode === 'insert') {
+            throw Error('Open a .kcad project, ASCII/binary .dxf file, or .dwg file with the optional local codec.'); if (mode === 'insert') {
+            if (data.sourceDocument && report) { report.sourceRetained = false; report.warnings.push('Insert imports editable content only. Open the source as its own drawing to retain its original bytes.'); }
             if (this.doc !== target)
                 this.switchDocument(target.id);
             this.insertData(data);
@@ -2370,7 +2372,7 @@
     K.installProductionUI?.(App);
     K.installAdvancedUI?.(App);
     K.installKernelUI?.(App); K.installConstraintsUI?.(App); K.installDynamicUI?.(App);
-    K.installFontsUI?.(App);
+    K.installFontsUI?.(App); K.installSourceUI?.(App);
     const app = new App();
     app.init().catch(error => { console.error(error); document.documentElement.dataset.ready = 'error'; const log = $('command-history'); if (log) {
         const row = document.createElement('div');
