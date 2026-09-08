@@ -486,7 +486,13 @@
             else if (e.type === 'SPLINE') {
                 const p = e.controlPoints || e.points, degree = Math.min(e.degree || 3, p.length - 1), knots = e.knots?.length === p.length + degree + 1 ? e.knots : G.uniformKnots(p.length, degree);
                 base('SPLINE', e, owner);
-                put(100, 'AcDbSpline', 70, (e.closed ? 1 : 0) | (e.weights?.length ? 4 : 0), 71, degree, 72, knots.length, 73, p.length, 74, 0, 42, 1e-7, 43, 1e-7, 44, 1e-10);
+                // Some readers round knots using group 42. Keep that tolerance well
+                // below every distinct span; a fixed 1e-7 collapses small spans.
+                let knotTolerance = 1e-14;
+                for (let i = 1; i < knots.length; i++)
+                    if (knots[i] > knots[i-1]) knotTolerance = Math.min(knotTolerance, (knots[i]-knots[i-1])*1e-6);
+                knotTolerance = Math.max(Number.MIN_VALUE, knotTolerance);
+                put(100, 'AcDbSpline', 70, (e.closed ? 1 : 0) | (e.weights?.length ? 4 : 0), 71, degree, 72, knots.length, 73, p.length, 74, 0, 42, knotTolerance, 43, 1e-7, 44, 1e-10);
                 for (const k of knots)
                     put(40, k);
                 for (const w of e.weights || [])

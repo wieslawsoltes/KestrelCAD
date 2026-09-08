@@ -6,13 +6,13 @@
         return { x: e.axisX, y: e.axisY }; const b = basis(e.normal), r = e.rotation || 0; return { x: V.mul(V.add(V.mul(b.x, Math.cos(r)), V.mul(b.y, Math.sin(r))), e.rx || e.radius || 1), y: V.mul(V.add(V.mul(b.x, -Math.sin(r)), V.mul(b.y, Math.cos(r))), e.ry || e.radius || 1) }; }
     function conicPoint(e, t) { const { x, y } = conicAxes(e); return V.add(e.center, V.add(V.mul(x, Math.cos(t)), V.mul(y, Math.sin(t)))); }
     function uniformKnots(count, degree) { return Array.from({ length: count + degree + 1 }, (_, i) => i <= degree ? 0 : i >= count ? 1 : (i - degree) / (count - degree)); }
-    function nurbs(e, t) { const p = e.controlPoints || e.points, degree = Math.min(e.degree || 3, p.length - 1), knots = e.knots?.length === p.length + degree + 1 ? e.knots : uniformKnots(p.length, degree), weights = e.weights || []; let k = degree; const lo = knots[degree], hi = knots[p.length], u = lo + (hi - lo) * Math.min(1 - 1e-12, Math.max(0, t)); while (k < p.length - 1 && knots[k + 1] <= u)
+    function nurbs(e, t) { const p = e.controlPoints || e.points, degree = Math.min(e.degree || 3, p.length - 1), knots = e.knots?.length === p.length + degree + 1 ? e.knots : uniformKnots(p.length, degree), weights = e.weights || []; let k = degree; const lo = knots[degree], hi = knots[p.length], u = lo + (hi - lo) * Math.min(1, Math.max(0, t)); while (k < p.length - 1 && knots[k + 1] <= u)
         k++; const d = []; for (let j = 0; j <= degree; j++) {
         const i = k - degree + j, w = weights[i] ?? 1;
         d[j] = [p[i][0] * w, p[i][1] * w, (p[i][2] || 0) * w, w];
     } for (let r = 1; r <= degree; r++)
         for (let j = degree; j >= r; j--) {
-            const i = k - degree + j, den = knots[i + degree - r + 1] - knots[i], a = Math.abs(den) > EPS ? (u - knots[i]) / den : 0;
+            const i = k - degree + j, den = knots[i + degree - r + 1] - knots[i], a = den > 0 ? (u - knots[i]) / den : 0;
             d[j] = d[j].map((v, c) => (1 - a) * d[j - 1][c] + a * v);
         } return d[degree].slice(0, 3).map(v => v / (d[degree][3] || 1)); }
     function polylinePoints(e, tolerance = 1) { const p = e.points || [], out = []; for (let i = 0; i < p.length; i++) {
