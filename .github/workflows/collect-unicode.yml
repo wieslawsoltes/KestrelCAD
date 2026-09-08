@@ -1,0 +1,63 @@
+name: Collect pinned Unicode sources
+on:
+  push:
+    branches: [feature/rich-mtext-composition]
+    paths: [.github/workflows/collect-unicode.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Retrieve content-addressed public source without executing it
+        run: |
+          python3 - <<'PY'
+          import base64, hashlib, json, os, pathlib, urllib.request
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'unicode-source'
+          files = {
+            'LICENSE':'a45a2e077f5e0e88b004d095640e1bb1dd2a07c1',
+            'src/bidi/algorithm.ts':'499df92ee2a156d03b822ea58585d725281fe5f4',
+            'src/bidi/levels.ts':'94077a89e10d392f7d0924effb34e7926a9c8fa6',
+            'src/bidi/reorder.ts':'2e8269b80d9e8128f64f4accc7530414059b0d4a',
+            'src/bidi/types.ts':'eed57e13df220b6b5150faa9e3a9bf4be8952bba',
+            'src/data/generated/bidi-classes.ts':'87742a34ef07353ef9c1c541c1487b3028d6b703',
+            'src/data/generated/brackets.ts':'94692f3d74556153d1f8aa935613bee4934e3e71',
+            'src/data/generated/joining-types.ts':'d916e27bca149a537d1d9d5ffd1633b87d3ad969',
+            'src/data/generated/mirroring.ts':'90e83dc23ada4343366e4ab4b092ed8b7d68d508',
+            'src/data/generated/shaping-forms.ts':'bce2aed84977afacfe2690d1412a5ac175dfa61f',
+            'src/data/generated/version.ts':'3b011b795519511bf9e6efd62e29b91280e35587',
+            'src/data/lookup.ts':'c2f09314b136319f40466051b04f38d92ec1e85d',
+            'src/shape/shape.ts':'22ea7732ed80d08968bf2a7697c489ef289719d3',
+            'src/api/render.ts':'732d0c99f34723ac42f25d4949abab575fd6d1ce',
+            'src/index.ts':'de00d326e89ad1f72df7e0a75207cafd33a6b990',
+            'test/conformance/bidi-character.test.ts':'89065861ea7145e5e107100b69ec742594d39942',
+            'test/conformance/bidi-types.test.ts':'68339c3b6c3539ce31a4727890a95b4bd513238d',
+            'test/conformance/util.ts':'92008492ec2351c751ac468b8e9f86781d43859d',
+            'test/conformance/data/BidiCharacterTest.txt.gz':'2c484647f3fc05dfb2b59edef319b74ad5e9e486',
+            'test/conformance/data/BidiTest.txt.gz':'fee3e9888f174e826b1ee101b4118ff586d7a284',
+          }
+          manifest = {}
+          for name, expected in files.items():
+              url = 'https://api.github.com/repos/cc1a2b/bidi-shaper/git/blobs/' + expected
+              req = urllib.request.Request(url, headers={'User-Agent':'KestrelCAD-source-review'})
+              with urllib.request.urlopen(req, timeout=30) as response:
+                  payload = json.load(response)
+              assert payload['encoding'] == 'base64'
+              data = base64.b64decode(payload['content'])
+              assert len(data) <= 5*1024*1024
+              assert hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest() == expected, name
+              target = root / name
+              target.parent.mkdir(parents=True, exist_ok=True)
+              target.write_bytes(data)
+              manifest[name] = {'git_blob': expected, 'sha256': hashlib.sha256(data).hexdigest()}
+          (root/'manifest.json').write_text(json.dumps(manifest, indent=2)+'\n')
+          print('Verified', len(manifest), 'source and fixture files. No downloaded code executed.')
+          PY
+      - name: Upload sources for review
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+        with:
+          name: unicode-source
+          path: ${{ runner.temp }}/unicode-source
+          retention-days: 14
