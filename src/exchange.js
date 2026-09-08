@@ -109,7 +109,7 @@
         }
         function skip(type, detail) { report.skipped[type] = (report.skipped[type] || 0) + 1; if (detail && !report.warnings.includes(detail))
             report.warnings.push(detail); }
-        function common(r, inheritedLayer) { const lname = str(r, 8, '0'), c = num(r, 62, 256); return { layer: lname === '0' && inheritedLayer ? inheritedLayer : ensureLayer(lname), color: has(r, 420) ? hexColor(num(r, 420)) : c === 0 ? 'byblock' : c !== 256 ? aciColor(c) : 'bylayer', linetype: str(r, 6, 'ByLayer'), lineweight: num(r, 370) > 0 ? num(r, 370) / 100 : undefined, sourceHandle: str(r, 5) || undefined }; }
+        function common(r, inheritedLayer) { const lname = str(r, 8, '0'), c = num(r, 62, 256); return { layer: lname === '0' && inheritedLayer ? inheritedLayer : ensureLayer(lname), color: has(r, 420) ? hexColor(num(r, 420)) : c === 0 ? 'byblock' : c !== 256 ? aciColor(c) : 'bylayer', linetype: str(r, 6, 'ByLayer'), lineweight: num(r, 370) > 0 ? num(r, 370) / 100 : undefined, sourceHandle: str(r, 5) || undefined, hidden: num(r, 60) ? true : undefined }; }
         function emit(e, r, m, inherit) { if (!e)
             return; let out = { ...common(r, inherit), ...e }; if (m)
             out = G.transform(out, m); doc.add(out); report.created++; if (report.created > 200000)
@@ -379,7 +379,7 @@
             put(0, 'BLOCK_RECORD', 5, b.handle, 100, 'AcDbSymbolTableRecord', 100, 'AcDbBlockTableRecord', 2, b.name, 70, 0, 280, 1, 281, 0);
         put(0, 'ENDTAB', 0, 'ENDSEC');
         function base(type, e, owner = modelHandle) { put(0, type, 5, h(), 330, owner, 100, 'AcDbEntity', 8, layerName(e.layer)); if (e.color === 'byblock') put(62, 0); else if (e.color && e.color !== 'bylayer')
-            put(420, parseInt(e.color.slice(1), 16)); if (e.lineweight)
+            put(420, parseInt(e.color.slice(1), 16)); if (e.hidden) put(60, 1); if (e.lineweight)
             put(370, Math.round(e.lineweight * 100)); if (e.linetype && e.linetype !== 'ByLayer')
             put(6, /center/i.test(e.linetype) ? 'Center' : /dash/i.test(e.linetype) ? 'Dashed' : 'Continuous'); }
         function writeEntity(e, owner = modelHandle) {
