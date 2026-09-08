@@ -1,5 +1,5 @@
 'use strict';
-importScripts('math.js', 'geometry.js', 'model.js', 'exchange.js', 'production.js','kernel.js', 'constraints.js','dynamic-blocks.js','fonts.js','source-document.js','productivity.js');
+importScripts('math.js', 'geometry.js', 'model.js', 'exchange.js', 'production.js','kernel.js', 'constraints.js','dynamic-blocks.js','fonts.js','unicode-bidi.js','mtext.js','source-document.js','productivity.js');
 self.onmessage = event => { const { id, action, payload, name } = event.data; try {
     const result = action === 'parse-dxf' ? Kestrel.Exchange.parseDXF(payload, name) : action === 'write-dxf' ? Kestrel.Exchange.writeDXF(payload) : action === 'preserve-dxf' ? Kestrel.SourceDocument.exportPreserved(payload) : action === 'binary-dxf' ? Kestrel.SourceDocument.toBinary(Kestrel.Exchange.writeDXF(payload)) : null;
     if (result === null)

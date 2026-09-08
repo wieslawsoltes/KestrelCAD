@@ -118,7 +118,7 @@
  function defaults(){return [{name:'STANDARD',font:'',height:0,width:1,oblique:0,backwards:false,upsideDown:false,vertical:false}];}
  function styles(doc){return doc?.production?.textstyles||defaults();}
  function style(doc,name='STANDARD'){return styles(doc).find(s=>s.name.toLowerCase()===String(name).toLowerCase())||defaults()[0];}
- function properties(t,doc){const s=style(doc,t.textStyle);return {...t,textStyle:t.textStyle||s.name,font:s.font||'',widthFactor:t.widthFactor??s.width??1,oblique:t.oblique??s.oblique??0,backwards:t.backwards??!!s.backwards,upsideDown:t.upsideDown??!!s.upsideDown,vertical:t.vertical??!!s.vertical,lineSpacing:t.lineSpacing??1.35};}
+ function properties(t,doc){const s=style(doc,t.textStyle);return {...t,textStyle:t.textStyle||s.name,font:t.font??s.font??'',widthFactor:t.widthFactor??s.width??1,oblique:t.oblique??s.oblique??0,backwards:t.backwards??!!s.backwards,upsideDown:t.upsideDown??!!s.upsideDown,vertical:t.vertical??!!s.vertical,lineSpacing:t.lineSpacing??1.35};}
  function validate(data){const list=data.production?.textstyles;if(list){if(!Array.isArray(list)||!list.length||list.length>256)throw Error('Invalid text style table.');const seen=new Set();for(const s of list){K.Production.name(s.name);if(seen.has(s.name.toLowerCase()))throw Error('Duplicate text style.');seen.add(s.name.toLowerCase());if(typeof s.font!=='string'||s.font.length>255||/[\x00-\x1f]/.test(s.font))throw Error('Invalid font reference.');finite(s.height??0,'Fixed text height',0,1e9);finite(s.width??1,'Width factor',.001,1000);finite(s.oblique??0,'Oblique angle',-85,85);for(const flag of ['backwards','upsideDown','vertical'])if(s[flag]!==undefined&&typeof s[flag]!=='boolean')throw Error('Invalid text flag.');}if(!seen.has('standard'))throw Error('Keep the STANDARD text style.');if(data.production.currentTextStyle&&!seen.has(data.production.currentTextStyle.toLowerCase()))throw Error('Missing current text style.');}
   for(const e of [...data.entities,...(data.production?.blocks||[]).flatMap(b=>[...b.entities,...b.attributes||[]])]){if(e.textStyle!==undefined&&(typeof e.textStyle!=='string'||e.textStyle.length>255))throw Error('Invalid text style reference.');if(e.widthFactor!==undefined)finite(e.widthFactor,'Text width',.001,1000);if(e.oblique!==undefined)finite(e.oblique,'Text oblique',-85,85);if(e.lineSpacing!==undefined)finite(e.lineSpacing,'Line spacing',.1,10);for(const flag of ['backwards','upsideDown','vertical'])if(e[flag]!==undefined&&typeof e[flag]!=='boolean')throw Error('Invalid text flag.');}
  }
@@ -139,7 +139,7 @@
   return choices.sort((a,b)=>b.rank-a.rank)[0]?.text||null;
  }
  let context;
- function metrics(text,font){if(typeof document!=='undefined'&&!context)context=document.createElement('canvas').getContext('2d');const family=font?.family||'"Segoe UI",Arial,sans-serif';if(!context)return {width:text.length*.66,cap:1,em:1,family};context.font='1000px '+family;const cap=context.measureText('H').actualBoundingBoxAscent||730;return {width:context.measureText(text).width/cap,cap:1,em:1000/cap,family};}
+ function metrics(text,font,options={}){if(typeof document!=='undefined'&&!context)context=document.createElement('canvas').getContext('2d');const family=font?.family||'"Segoe UI",Arial,sans-serif';if(!context)return {width:text.length*.66,cap:1,em:1,family};context.font=(options.italic?'italic ':'')+(options.bold?'bold ':'')+'1000px '+family;context.direction=options.textDirection||'ltr';if('letterSpacing' in context)context.letterSpacing='0px';const cap=context.measureText('H').actualBoundingBoxAscent||730;if('letterSpacing' in context)context.letterSpacing=((options.tracking??1)-1)*.2*cap+'px';return {width:context.measureText(text).width/cap,cap:1,em:1000/cap,family};}
  function layout(input,doc){const t=properties(input,doc),font=registry.get(key(t.font))||registry.get(key(t.font)+'.shx'),stroke=font?.kind==='stroke',missing=!!t.font&&!font,placeholder=missing&&(/\.(shx|shp)$/i.test(t.font)||!key(t.font).includes('.')),h=t.height||10,axes=G.textAxes(t),width=t.widthFactor*(t.backwards?-1:1),ys=t.upsideDown?-1:1,slant=Math.tan(t.oblique*Math.PI/180),warnings=new Set(),segments=[],points=[],texts=[];
   const transform=p=>V.add(t.position,V.add(V.mul(axes.x,h*width*(p[0]+slant*p[1])),V.mul(axes.y,h*ys*p[1])));
   if(input.textStyle&&!styles(doc).some(s=>s.name.toLowerCase()===input.textStyle.toLowerCase()))warnings.add('Missing text style: '+input.textStyle);if(style(doc,input.textStyle).bigFont)warnings.add('Big Font dependency is not supported: '+style(doc,input.textStyle).bigFont);if(missing)warnings.add('Missing font: '+t.font);if(t.vertical&&stroke&&font.mode!==2)warnings.add('Font does not support vertical writing: '+t.font);
@@ -149,26 +149,33 @@
      if(!g){if(!placeholder)warnings.add('Missing glyph U+'+code.toString(16).toUpperCase()+' in '+t.font);g={segments:ch===' '?[]:[[[0,0],[.6,0]],[[.6,0],[.6,1]],[[.6,1],[0,1]],[[0,1],[0,0]],[[0,0],[.6,1]]],advance:t.vertical?[0,-1.35]:[.8,0]};}
      const unit=actual?1/font.above:1;
      for(const pair of g.segments){if(++count>limits.segments)throw Error('Text stroke segment limit exceeded.');local.push(pair.map(p=>[x+p[0]*unit,y+p[1]*unit]));}
-     x+=g.advance[0]*unit;y=t.vertical?y+g.advance[1]*unit:0;
+     x+=g.advance[0]*unit+((t.tracking??1)-1)*.2;y=t.vertical?y+g.advance[1]*unit:0;
     }
     const dx=t.align==='center'?-x/2:t.align==='right'?-x:0,dy=t.vertical?0:-lineIndex*t.lineSpacing;
     for(const pair of local)segments.push(pair.map(p=>transform([p[0]+dx+(t.vertical?lineIndex*t.lineSpacing:0),p[1]+dy])));
     const descent=stroke?font.below/font.above:.25;for(const xx of [dx,dx+x])for(const yy of [dy+y-descent,dy+1])vertices.push([xx+(t.vertical?lineIndex*t.lineSpacing:0),yy]);
-   }else{const m=metrics(line,font),dx=t.align==='center'?-m.width/2:t.align==='right'?-m.width:0,dy=-lineIndex*t.lineSpacing;
+   }else{const m=metrics(line,font,t),dx=t.align==='center'?-m.width/2:t.align==='right'?-m.width:0,dy=-lineIndex*t.lineSpacing;
     if(t.vertical)warnings.add('Vertical outline text is stacked, not a SHX dual-orientation layout.');
-    if(t.vertical){let index=0;for(const ch of line){const cm=metrics(ch,font);texts.push({...t,text:ch,position:transform([lineIndex*t.lineSpacing,-index*t.lineSpacing]),fontFamily:m.family,exportFamily:font?.exportFamily,fontEm:m.em,align:'center',vertical:false,fontMissing:missing});index++;}for(const xx of [-.6,.6])for(const yy of [-line.length*t.lineSpacing,1])vertices.push([xx+lineIndex*t.lineSpacing,yy]);}
+    if(t.vertical){let index=0;for(const ch of line){const cm=metrics(ch,font,t);texts.push({...t,text:ch,position:transform([lineIndex*t.lineSpacing,-index*t.lineSpacing]),fontFamily:m.family,exportFamily:font?.exportFamily,fontEm:m.em,align:'center',vertical:false,fontMissing:missing});index++;}for(const xx of [-.6,.6])for(const yy of [-line.length*t.lineSpacing,1])vertices.push([xx+lineIndex*t.lineSpacing,yy]);}
     else{const resolved={...t,text:line,position:V.add(t.position,V.add(V.mul(axes.x,h*width*slant*dy),V.mul(axes.y,h*ys*dy))),fontFamily:m.family,exportFamily:font?.exportFamily,fontEm:m.em,fontMissing:missing,vertical:false};texts.push(resolved);for(const xx of [dx,dx+m.width])for(const yy of [dy-.25,dy+1])vertices.push([xx,yy]);}
    }
    points.push(...vertices.map(transform));
   }
   points.push(...segments.flat());return {segments,texts,points,warnings:[...warnings]};
  }
+ function resource(name){return registry.get(key(name))||registry.get(key(name)+'.shx');}
+ function measure(text,input={},doc){const t=properties(input,doc),font=resource(t.font),h=t.height||1;let width=0;
+  if(font?.kind==='stroke'){for(const ch of String(text)){const g=glyph(font,ch.codePointAt(0));width+=(g?g.advance[0]/font.above:.8)+((t.tracking??1)-1)*.2;}}
+  else if(t.font&&(/\.(shx|shp)$/i.test(t.font)||!key(t.font).includes('.'))&&!font)width=Array.from(text).length*.8;
+  else width=metrics(text,font,t).width;
+  return {width:Math.max(0,width*h*(t.widthFactor??1)),font};
+ }
  function svgText(t,project,color,escape){const h=t.height||10,ax=G.textAxes(t),p=project(t.position),x=project(V.add(t.position,V.mul(ax.x,h))),y=project(V.add(t.position,V.mul(ax.y,h))),w=(t.widthFactor??1)*(t.backwards?-1:1),up=t.upsideDown?-1:1,k=Math.tan((t.oblique||0)*Math.PI/180),a=(x[0]-p[0])*w,b=(x[1]-p[1])*w,c=-(y[0]-p[0])*up-a*k,d=-(y[1]-p[1])*up-b*k;
-  return `<text transform="matrix(${[a,b,c,d,...p].join(' ')})" x="0" y="0" font-size="${t.fontEm||1}" font-family="${escape(t.exportFamily||t.fontFamily||'Arial,sans-serif')}" text-anchor="${t.align==='center'?'middle':t.align==='right'?'end':'start'}" fill="${color}" stroke="none" data-font="${escape(t.font||'browser default')}">${escape(t.text||'')}</text>`;
+  return `<text transform="matrix(${[a,b,c,d,...p.slice(0,2)].join(' ')})" x="0" y="0" font-size="${t.fontEm||1}" font-family="${escape(t.exportFamily||t.fontFamily||'Arial,sans-serif')}" font-weight="${t.bold?'bold':'normal'}" font-style="${t.italic?'italic':'normal'}" direction="${t.textDirection==='rtl'?'rtl':'ltr'}" unicode-bidi="isolate" letter-spacing="${((t.tracking??1)-1)*.2}" text-anchor="${t.align==='center'?'middle':(t.align==='right')!==(t.textDirection==='rtl')?'end':'start'}" fill="${color}" stroke="none" data-font="${escape(t.font||'browser default')}">${escape(t.text||'')}</text>`;
  }
  function drawText(ctx,t,project,color,alpha){const h=t.height||10,ax=G.textAxes(t),p=project(t.position),x=project(V.add(t.position,V.mul(ax.x,h))),y=project(V.add(t.position,V.mul(ax.y,h)));if(p[2]<0||p[2]>1)return;
   const w=(t.widthFactor??1)*(t.backwards?-1:1),up=t.upsideDown?-1:1,k=Math.tan((t.oblique||0)*Math.PI/180),a=(x[0]-p[0])*w,b=(x[1]-p[1])*w,c=-(y[0]-p[0])*up-a*k,d=-(y[1]-p[1])*up-b*k;if(Math.abs(a*d-b*c)<.01)return;
-  ctx.save();ctx.transform(a,b,c,d,p[0],p[1]);ctx.font=(t.fontEm||1)+'px '+(t.fontFamily||'Arial,sans-serif');ctx.textAlign=t.align||'left';ctx.textBaseline='alphabetic';ctx.fillStyle=color;ctx.globalAlpha=alpha;ctx.fillText(t.text||'',0,0);ctx.restore();
+  ctx.save();ctx.transform(a,b,c,d,p[0],p[1]);ctx.font=(t.italic?'italic ':'')+(t.bold?'bold ':'')+(t.fontEm||1)+'px '+(t.fontFamily||'Arial,sans-serif');ctx.direction=t.textDirection||'ltr';if('letterSpacing' in ctx)ctx.letterSpacing=((t.tracking??1)-1)*.2+'px';ctx.textAlign=t.align||'left';ctx.textBaseline='alphabetic';ctx.fillStyle=color;ctx.globalAlpha=alpha;ctx.fillText(t.text||'',0,0);ctx.restore();
  }
  function report(doc){const out=new Set();for(const {e}of K.Production.renderEntities(doc)){for(const t of originalGeometry(e).texts||[]){const r=layout({...t,textStyle:t.textStyle||e.textStyle},doc);for(const warning of r.warnings)out.add(warning);}}return [...out];}
  // Keep the complete text-local affine mapping through scale, mirror and shear.
@@ -180,7 +187,7 @@
  // Resolve every annotation emitted by any geometry producer, including blocks and tables.
  const originalGeometry=G.geometry;
  G.geometry=function(e,tolerance){const g=originalGeometry(e,tolerance);if(!g.texts?.length)return g;const doc=K.Production.owners.get(e),out={...g,segments:g.segments.slice(),texts:[],points:[...g.segments.flat(),...g.triangles.flatMap(t=>t.points)]};
-  for(const t of g.texts){const r=layout({...t,textStyle:t.textStyle||e.textStyle},doc);out.segments.push(...r.segments);out.texts.push(...r.texts);out.points.push(...r.points);}return out;};
+  for(const t of g.texts){if(t.composition){out.texts.push(t);out.points.push(...t.composition.quads.flat());continue;}const r=layout({...t,textStyle:t.textStyle||e.textStyle},doc);out.segments.push(...r.segments);out.texts.push(...r.texts);out.points.push(...r.points);}return out;};
  const oldValidate=K.Production.validate;K.Production.validate=function(data){oldValidate(data);validate(data);};
- K.Fonts={limits,parseSHX,parseSHP,outlineFamily,glyph,register,load,registry,defaults,styles,style,properties,validate,layout,report,svgText,drawText,subscribe:fn=>{subscribers.add(fn);return()=>subscribers.delete(fn);}};
+ K.Fonts={resource,measure,limits,parseSHX,parseSHP,outlineFamily,glyph,register,load,registry,defaults,styles,style,properties,validate,layout,report,svgText,drawText,subscribe:fn=>{subscribers.add(fn);return()=>subscribers.delete(fn);}};
 })(typeof window!=='undefined'?window:globalThis);

@@ -8,11 +8,12 @@ from pathlib import Path
 def fingerprint(root: Path) -> str:
     paths = [root / 'index.html']
     paths += sorted(root.glob('requirements*.txt'))
-    for folder in ('src', 'tools', '.github/workflows'):
+    for folder in ('src', 'tools', '.github/workflows', 'third_party'):
         paths += sorted(p for p in (root / folder).rglob('*') if p.is_file()
                         and '__pycache__' not in p.parts and p.suffix != '.pyc')
     paths += sorted(p for p in (root / 'tests').glob('*') if p.is_file()
                     and p.suffix in ('.js', '.py', '.html'))
+    paths += [p for p in (root / 'tests/fixtures').glob('unicode-bidi-sample.json') if p.is_file()]
     h = hashlib.sha256()
     for path in sorted(set(paths)):
         h.update(path.relative_to(root).as_posix().encode() + b'\0')

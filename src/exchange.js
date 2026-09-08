@@ -211,6 +211,9 @@
                     else if (t === 'ATTRIB' && K.Production && doc.entities.at(-1)?.type === 'INSERT') {
                         doc.entities.at(-1).attributes[decode(str(r, 2))] = decode(values(r, 1)[0] || '');
                     }
+                    else if(t==='MTEXT' && K.MText){
+                        const e=K.MText.fromDXF(r,{num,str,values,pt,normal});K.MText.validate(e);emit(e,r,m,inherit);for(const w of K.MText.parse(e.text,{height:e.height}).warnings)report.warnings.push(w);
+                    }
                     else if (t === 'TEXT' || t === 'MTEXT' || t === 'ATTRIB' || t === 'ATTDEF') {
                         if ((t === 'ATTRIB' || t === 'ATTDEF') && (num(r, 70) & 1))
                             continue;
@@ -491,6 +494,7 @@
                 for (const v of p)
                     point(10, v);
             }
+            else if(e.type==='MTEXT'){if(!K.MText)throw Error('MTEXT support is not loaded.');base('MTEXT',e,owner);for(const [c,v]of K.MText.dxfPairs(e))put(c,v);}
             else if (e.type === 'TEXT') {
                 if(K.Fonts)e=K.Fonts.properties(e,doc);
                 const lines = (e.text || '').split('\n'), axes = G.textAxes(e), normal = axes.n, ax = basis(normal), rotation = Math.atan2(V.dot(axes.x, ax.y), V.dot(axes.x, ax.x));
@@ -612,6 +616,7 @@
             if (g.segments.length)
                 svg.push(`<path d="${g.segments.map(s => 'M' + fmt(project(s[0])) + 'L' + fmt(project(s[1]))).join('')}"${/dash|center/i.test(e.linetype === 'ByLayer' ? layer.linetype : e.linetype || '') ? ' stroke-dasharray="12 5"' : ''}/>`);
             for (const t of g.texts) {
+                if(t.composition && K.MText){svg.push(K.MText.svg(t,project,color,xml,mono));continue;}
                 if(K.Fonts && t.fontFamily){svg.push(K.Fonts.svgText(t,project,color,xml));continue;}
                 const p = project(t.position), hh = camera ? Math.hypot(...V.sub(project(V.add(t.position, [0, t.height || 10, 0])), p).slice(0, 2)) : (t.height || 10) * scale, rot = -(t.rotation || 0) * 180 / Math.PI;
                 const lines = (t.text || '').split('\n');
