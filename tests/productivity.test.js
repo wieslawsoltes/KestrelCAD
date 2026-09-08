@@ -1,0 +1,56 @@
+'use strict';
+const fs=require('fs'),path=require('path'),assert=require('assert');
+const root=path.resolve(__dirname,'..');
+const names=new Set(['math.js','geometry.js','model.js','exchange.js','production.js','kernel.js','constraints.js','dynamic-blocks.js','fonts.js','source-document.js','productivity.js']);
+const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
+const scripts=[...html.matchAll(/<script\b[^>]*src=["']([^"']+)["'][^>]*>/gi)].map(m=>m[1]);
+for(const file of scripts)if(names.has(path.basename(file)))require(path.join(root,file));
+const K=globalThis.Kestrel,D=K?.Productivity;
+assert(D&&K.Drawing&&K.Production,'Core productivity module must be integrated into index.html.');
+const results=[];
+function test(name,fn){try{fn();results.push({name,status:'passed'});console.log('PASS',name);}catch(e){results.push({name,status:'failed',error:e.stack});console.error('FAIL',name,e.stack);}}
+const near=(a,b,tol=1e-7)=>assert(Math.abs(a-b)<=tol*Math.max(1,Math.abs(b)),`${a} != ${b}`);
+const vector=(a,b)=>{assert.equal(a.length,b.length);a.forEach((v,i)=>near(v,b[i]));};
+const fail=fn=>assert.throws(fn);
+function drawing(){return new K.Drawing('Productivity test');}
+function add(d,type,props){let e;d.transaction('Fixture',()=>{e=d.add(type,props);});return e;}
+function line(d,a=[0,0,0],b=[20,0,0]){return add(d,'LINE',{points:[a,b]});}
+test('line stations use real 3D distance',()=>{const c=D.curve({type:'LINE',points:[[1,2,3],[4,6,15]]});near(c.length,13);vector(c.at(6.5).point,[2.5,4,9]);});
+test('polyline stations continue across segment boundaries',()=>{const c=D.curve({type:'POLYLINE',points:[[0,0,0],[10,0,0],[10,20,0]]});near(c.length,30);vector(c.at(15).point,[10,5,0]);});
+test('bulged semicircle length and midpoint remain analytic',()=>{const c=D.curve({type:'POLYLINE',points:[[-5,0,0],[5,0,0]],bulges:[1,0]});near(c.length,5*Math.PI);vector(c.at(c.length/2).point,[0,-5,0]);});
+test('negative bulge traverses the opposite semicircle',()=>{const c=D.curve({type:'POLYLINE',points:[[-5,0,0],[5,0,0]],bulges:[-1,0]});vector(c.at(c.length/2).point,[0,5,0]);});
+test('tilted bulge remains on its original drafting plane',()=>{const c=D.curve({type:'POLYLINE',points:[[0,0,0],[0,0,10]],bulges:[1,0],normal:[1,0,0]});near(c.length,5*Math.PI);near(c.at(c.length/2).point[0],0);});
+test('division places interior nodes on an open curve',()=>{const p=D.stations({type:'LINE',points:[[0,0,0],[20,0,0]]},'divide',5);assert.equal(p.length,4);vector(p.map(s=>s.point[0]),[4,8,12,16]);});
+test('closed division has no duplicate seam node',()=>{const p=D.stations({type:'CIRCLE',center:[0,0,0],radius:10},'divide',4);assert.equal(p.length,4);vector(p[0].point,[10,0,0]);vector(p[1].point,[0,10,0]);});
+test('measure includes an exact open end but never exceeds it',()=>{const p=D.stations({type:'LINE',points:[[0,0,0],[20,0,0]]},'measure',4);assert.equal(p.length,5);near(p.at(-1).point[0],20);});
+test('closed measurement excludes the seam endpoint',()=>{const p=D.stations({type:'CIRCLE',center:[0,0,0],radius:10},'measure',5*Math.PI);assert.equal(p.length,3);});
+test('station resource bounds reject excessive allocation',()=>{fail(()=>D.stations({type:'LINE',points:[[0,0,0],[20,0,0]]},'measure',1e-8));fail(()=>D.stations({type:'LINE',points:[[0,0,0],[20,0,0]]},'divide',3.5));});
+test('degenerate and distorted curves reject',()=>{fail(()=>D.curve({type:'LINE',points:[[0,0,0],[0,0,0]]}));fail(()=>D.curve({type:'ARC',center:[0,0,0],axisX:[2,0,0],axisY:[0,1,0],startAngle:0,endAngle:1}));});
+test('curve marking retains source and has one undo step',()=>{const d=drawing(),e=line(d),n=d.undoStack.length;D.mark(d,e.id,'divide',5);assert.equal(d.entities.length,5);assert.equal(d.undoStack.length,n+1);d.undo();assert.equal(d.entities.length,1);d.redo();assert.equal(d.entities.length,5);});
+test('tangent-aligned block markers are persistent references',()=>{const d=drawing(),part=line(d,[0,0,0],[1,0,0]);const b=K.Production.defineBlock(d,'Marker',[part.id],[0,0,0],false);const c=add(d,'CIRCLE',{center:[0,0,0],radius:10});const ids=D.mark(d,c.id,'divide',4,{block:b.id});assert.equal(ids.length,4);const e=d.byId.get(ids[0]);assert.equal(e.type,'INSERT');vector([e.matrix[0],e.matrix[1],e.matrix[2]],[0,1,0]);assert.equal(K.Drawing.from(d.serialize()).entities.length,d.entities.length);});
+test('lengthen total changes only the chosen line endpoint',()=>{const d=drawing(),e=line(d);D.lengthen(d,e.id,'total',35);vector(d.byId.get(e.id).points[0],[0,0,0]);vector(d.byId.get(e.id).points[1],[35,0,0]);d.undo();near(D.curve(d.byId.get(e.id)).length,20);});
+test('lengthen delta at start preserves opposite endpoint',()=>{const d=drawing(),e=line(d);D.lengthen(d,e.id,'delta',5,'start');vector(d.byId.get(e.id).points[0],[-5,0,0]);vector(d.byId.get(e.id).points[1],[20,0,0]);});
+test('lengthen percentage operates on circular arc length',()=>{const d=drawing(),e=add(d,'ARC',{center:[0,0,0],radius:10,startAngle:0,endAngle:Math.PI/2});D.lengthen(d,e.id,'percent',200);near(d.byId.get(e.id).endAngle,Math.PI);});
+test('invalid length edit leaves source and history unchanged',()=>{const d=drawing(),e=line(d),snapshot=d.snapshot(),n=d.undoStack.length;fail(()=>D.lengthen(d,e.id,'total',0));assert.equal(d.snapshot(),snapshot);assert.equal(d.undoStack.length,n);});
+test('lengthening beyond one revolution is explicit',()=>{const d=drawing(),e=add(d,'ARC',{center:[0,0,0],radius:10,startAngle:0,endAngle:1});fail(()=>D.lengthen(d,e.id,'total',100));});
+test('locked layer cannot be lengthened or marked',()=>{const d=drawing(),e=line(d);d.layer(e).locked=true;fail(()=>D.lengthen(d,e.id,'total',30));fail(()=>D.mark(d,e.id,'divide',5));});
+test('driving constraints cannot be silently reassigned',()=>{const d=drawing(),e=line(d);K.Constraints.add(d,{type:'horizontal',a:{entity:e.id}});fail(()=>D.reverse(d,[e.id]));fail(()=>D.lengthen(d,e.id,'total',30));});
+test('reversed open bulges preserve locus and reverse traversal',()=>{const e={type:'POLYLINE',points:[[-5,0,0],[5,0,0],[10,0,0]],bulges:[1,0,0]},r=D.reversed(e),a=D.curve(e),b=D.curve(r);near(a.length,b.length);for(const t of [0,.2,.5,.8,1])vector(a.at(a.length*(1-t)).point,b.at(b.length*t).point);});
+test('closed bulge indexing is preserved under two reversals',()=>{const e={type:'POLYLINE',points:[[0,0,0],[10,0,0],[10,10,0],[0,10,0]],closed:true,bulges:[0,1,0,1]};assert.deepEqual(D.reversed(D.reversed(e)),e);});
+test('arc reversal preserves analytic points and length',()=>{const e={type:'ARC',center:[3,4,5],radius:7,startAngle:.4,endAngle:2.1},a=D.curve(e),b=D.curve(D.reversed(e));for(const t of [0,.3,.7,1])vector(a.at(a.length*(1-t)).point,b.at(b.length*t).point);});
+test('spline reversal retains rational weights and knot domain',()=>{const e={type:'SPLINE',degree:2,controlPoints:[[1,0,0],[1,1,0],[0,1,0]],weights:[1,Math.SQRT1_2,1],knots:[2,2,2,5,5,5]},r=D.reversed(e);for(const t of [.1,.4,.8])vector(GEO(e,1-t),GEO(r,t));function GEO(e,t){return K.Geo.nurbs(e,t);}});
+test('reverse is atomic across unsupported selections',()=>{const d=drawing(),a=line(d),b=add(d,'TEXT',{position:[0,0,0],height:2,text:'test'}),before=d.snapshot();fail(()=>D.reverse(d,[a.id,b.id]));assert.equal(d.snapshot(),before);});
+test('quick selection searches literal table and attribute text',()=>{const d=drawing(),a=add(d,'TEXT',{position:[0,0,0],height:2,text:'Valve [A]'});line(d);assert.deepEqual(D.select(d,{text:'[a]'}),[a.id]);});
+test('selection modes compose without creating history',()=>{const d=drawing(),a=line(d),b=add(d,'CIRCLE',{center:[0,0,0],radius:3}),n=d.undoStack.length;D.select(d,{type:'LINE'});D.select(d,{type:'CIRCLE'},'add');assert.equal(d.selection.size,2);D.select(d,{type:'CIRCLE'},'remove');assert.deepEqual([...d.selection],[a.id]);D.select(d,{type:'CIRCLE'},'intersect');assert.equal(d.selection.size,0);assert.equal(d.undoStack.length,n);});
+test('quick selection excludes hidden and locked entities',()=>{const d=drawing(),a=line(d),b=line(d);b.hidden=true;assert.deepEqual(D.select(d,{type:'LINE'}),[a.id]);d.layer(a).locked=true;assert.equal(D.select(d,{}).length,0);});
+test('polyline area includes circular bulge segments',()=>{near(D.area({type:'POLYLINE',points:[[0,0,0],[10,0,0],[10,10,0],[0,10,0]],closed:true,bulges:[0,1,0,1]}),100+25*Math.PI);});
+test('circle quantities are analytic and top-level counts are explicit',()=>{const d=drawing();add(d,'CIRCLE',{center:[0,0,0],radius:10});add(d,'CIRCLE',{center:[25,0,0],radius:10});const c=D.count(d);assert.equal(c.length,1);assert.equal(c[0].count,2);near(c[0].totalArea,200*Math.PI);near(c[0].totalLength,40*Math.PI);});
+test('CSV escapes delimiters, multiline text and formula injection',()=>{const csv=D.csv([{id:'x',type:'TEXT',layer:'A,1',block:'',text:'=HYPERLINK("bad")\nnext',units:'mm',attributes:{TAG:'@SUM(1)'}}]);assert(csv.includes('"A,1"'));assert(csv.includes('"\'=HYPERLINK(""bad"")\nnext"'));assert(csv.includes('"\'@SUM(1)"'));});
+test('extraction creates an editable snapshot table with undo',()=>{const d=drawing();line(d);add(d,'CIRCLE',{center:[0,0,0],radius:4});const e=D.extractionTable(d,null,[10,20,0]);assert.equal(e.cells.length,3);assert.equal(e.cells[1][3],'20');d.undo();assert.equal(d.entities.length,2);});
+test('layer states survive native persistence and restore without deleting layers',()=>{const d=drawing(),e=line(d),layer=d.layer(e);D.saveLayers(d,'Design');d.transaction('Layer change',()=>{layer.visible=false;layer.color='#123456';d.addLayer('New');});const restored=K.Drawing.from(d.serialize());D.restoreLayers(restored,'Design');assert(restored.layer(e).visible);assert(restored.layers.some(l=>l.name==='New'));assert.notEqual(restored.layer(e).color,'#123456');});
+test('layer state restoration and deletion are undoable',()=>{const d=drawing(),e=line(d);D.saveLayers(d,'Design');d.transaction('Hide',()=>{d.layer(e).visible=false;});D.restoreLayers(d,'Design');assert(d.layer(e).visible);d.undo();assert(!d.layer(e).visible);D.deleteLayers(d,'Design');assert.equal(D.layerStates(d).length,0);d.undo();assert.equal(D.layerStates(d).length,1);});
+test('layer state overwrite requires an explicit request',()=>{const d=drawing();D.saveLayers(d,'Design');fail(()=>D.saveLayers(d,'design'));D.saveLayers(d,'design',true);assert.equal(D.layerStates(d).length,1);});
+const failed=results.filter(r=>r.status==='failed').length;
+fs.mkdirSync(path.join(root,'tests/results'),{recursive:true});
+fs.writeFileSync(path.join(root,'tests/results/productivity-results.json'),JSON.stringify({passed:results.length-failed,failed,tests:results},null,2));
+console.log(`Productivity: ${results.length-failed}/${results.length} passed`);process.exitCode=failed?1:0;
