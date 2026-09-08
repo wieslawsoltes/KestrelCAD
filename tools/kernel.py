@@ -20,7 +20,7 @@ OPERATIONS = ('box', 'cylinder', 'cone', 'sphere', 'torus', 'extrude', 'revolve'
               'loft', 'sweep', 'union', 'subtract', 'intersect', 'fillet', 'chamfer',
               'shell', 'section', 'transform', 'import', 'export', 'inspect',
               'slice', 'separate', 'plane-surface', 'extract-faces', 'thicken', 'massprops',
-              'acis-import', 'acis-export', 'acis-dxf')
+              'acis-import', 'acis-export', 'acis-dxf', 'interference')
 
 
 def num(x, label='number', lo=-1e8, hi=1e8):
@@ -311,6 +311,9 @@ def execute(request):
         return {'format': fmt, 'data': base64.b64encode(data).decode('ascii'), 'bytes': len(data),
                 'bodies': len(shapes), 'mode': 'planar-straight-brep', 'geometryOnly': True,
                 'warnings': ['Only selected native body geometry is exported; drawing annotations, attributes and application history are not included.']}
+    if op == 'interference':
+        from native_analysis import analyze
+        return analyze(shapes, p, tolerance)
     if op == 'massprops':
         if not shapes or any(not s.Solids() for s in shapes):
             raise ValueError('Select native closed solids for mass properties.')
