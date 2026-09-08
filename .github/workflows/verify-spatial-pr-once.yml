@@ -1,0 +1,126 @@
+name: Verify and reconcile spatial PR
+
+on:
+  push:
+    branches: [maintenance/verify-spatial-pr-20260908]
+    paths: [.github/workflows/verify-spatial-pr-once.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+  checks: read
+
+concurrency:
+  group: reconcile-spatial-pr-13
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: github.repository == 'wieslawsoltes/KestrelCAD'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Resolve the actual PR and base without changing either
+        id: target
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/wieslawsoltes/KestrelCAD/pulls/13 > "$RUNNER_TEMP/pr-before.json"
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          p=json.loads((pathlib.Path(os.environ['RUNNER_TEMP'])/'pr-before.json').read_text())
+          if p.get('merged'):
+              print('PR #13 is already merged; no merge or source write will be attempted.')
+              with open(os.environ['GITHUB_OUTPUT'],'a') as out: out.write('active=false\n')
+          else:
+              assert p['state']=='open' and not p['draft'], 'PR must be open and ready'
+              assert p['head']['repo']['full_name']=='wieslawsoltes/KestrelCAD'
+              assert p['head']['ref']=='feature/spatial-constraints'
+              assert p['base']['ref']=='main'
+              with open(os.environ['GITHUB_OUTPUT'],'a') as out:
+                  out.write('active=true\nhead='+p['head']['sha']+'\nbase='+p['base']['sha']+'\n')
+          PY
+      - name: Check out the actual proposed integration
+        if: steps.target.outputs.active == 'true'
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: refs/pull/13/merge
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Verify the merge parents are the resolved source and base
+        if: steps.target.outputs.active == 'true'
+        env:
+          EXPECTED_HEAD: ${{ steps.target.outputs.head }}
+          EXPECTED_BASE: ${{ steps.target.outputs.base }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^1)" = "$EXPECTED_BASE"
+          test "$(git rev-parse HEAD^2)" = "$EXPECTED_HEAD"
+      - name: Install the established verification dependencies
+        if: steps.target.outputs.active == 'true'
+        run: |
+          python3 -m pip install -r requirements-dev.txt -r requirements-kernel.txt
+          python3 -m playwright install --with-deps chromium
+          python3 -c "from playwright.sync_api import sync_playwright; p=sync_playwright().start(); print('CHROMIUM_PATH='+p.chromium.executable_path); p.stop()" >> "$GITHUB_ENV"
+      - name: Run every discovered verification suite
+        if: steps.target.outputs.active == 'true'
+        env:
+          SOURCE_HEAD: ${{ steps.target.outputs.head }}
+        run: python3 tools/verify.py --previews
+      - name: Recheck source, independent CI, and reviews before normal merge
+        if: steps.target.outputs.active == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_HEAD: ${{ steps.target.outputs.head }}
+          EXPECTED_BASE: ${{ steps.target.outputs.base }}
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          repo='wieslawsoltes/KestrelCAD'
+          def api(path,method='GET',data=None):
+              cmd=['gh','api','--method',method,path]
+              if data is not None: cmd += ['--input','-']
+              r=subprocess.run(cmd,input=json.dumps(data) if data is not None else None,text=True,capture_output=True,check=True)
+              return json.loads(r.stdout) if r.stdout.strip() else {}
+          p=api(f'repos/{repo}/pulls/13')
+          assert p['state']=='open' and not p['draft'] and not p['merged']
+          assert p['head']['sha']==os.environ['EXPECTED_HEAD'], 'PR head changed; refusing merge'
+          assert p['base']['sha']==os.environ['EXPECTED_BASE'], 'PR base changed; rerun full verification'
+          assert p['mergeable'] is True, 'GitHub mergeability not established'
+          main=api(f'repos/{repo}/git/ref/heads/main')['object']['sha']
+          assert main==os.environ['EXPECTED_BASE'], 'Main changed; rerun full verification'
+          runs=api(f'repos/{repo}/actions/runs?head_sha={p["head"]["sha"]}&per_page=100')['workflow_runs']
+          candidates=[r for r in runs if r['name']=='Verify CAD changes' and r['head_sha']==p['head']['sha']]
+          assert candidates, 'No independent PR verification run exists'
+          latest=max(candidates,key=lambda r:r['id'])
+          assert latest['status']=='completed' and latest['conclusion']=='success', 'Independent PR CI is not successful'
+          checks=api(f'repos/{repo}/commits/{p["head"]["sha"]}/check-runs?per_page=100')
+          assert checks['total_count']<=100, 'Check pagination requires explicit review'
+          byname={}
+          for c in sorted(checks['check_runs'],key=lambda c:c['id']): byname[(c['app']['id'],c['name'])]=c
+          assert all(c['status']=='completed' and c['conclusion'] in ('success','neutral','skipped') for c in byname.values()), 'A check is pending or failing'
+          reviews=api(f'repos/{repo}/pulls/13/reviews?per_page=100')
+          assert len(reviews)<100, 'Review pagination requires explicit review'
+          byuser={}
+          for r in reviews:
+              if r['state'] in ('APPROVED','CHANGES_REQUESTED','DISMISSED'): byuser[r['user']['login']]=r['state']
+          assert 'CHANGES_REQUESTED' not in byuser.values(), 'Outstanding requested changes'
+          result=api(f'repos/{repo}/pulls/13/merge','PUT',{'sha':p['head']['sha'],'merge_method':'squash','commit_title':'feat: verified spatial constraints and rigid assembly mates (#13)'})
+          assert result.get('merged') is True, result
+          evidence={'pull_request':13,'tested_head':p['head']['sha'],'tested_base':main,'independent_verification_run':latest['id'],'merge':result}
+          directory=pathlib.Path(os.environ['RUNNER_TEMP'])/'spatial-merge-evidence'; directory.mkdir()
+          (directory/'result.json').write_text(json.dumps(evidence,indent=2)+'\n')
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as f:
+              f.write('## Verified merge\n\nPR #13 merged at `'+result['sha']+'` after complete integrated-source tests and independent PR CI.\n')
+          api(f'repos/{repo}/actions/workflows/pages.yml/dispatches','POST',{'ref':'main'})
+          PY
+      - name: Retain the merge evidence
+        if: always() && steps.target.outputs.active == 'true'
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa
+        with:
+          name: spatial-merge-evidence
+          path: ${{ runner.temp }}/spatial-merge-evidence
+          retention-days: 14
