@@ -16,7 +16,8 @@
         { id: 'construction', name: 'A-CENTER', color: '#c69a66', visible: true, locked: false, linetype: 'Center', lineweight: .13 }
     ];
     const TYPES = new Set(['LINE', 'POLYLINE', 'CIRCLE', 'ARC', 'ELLIPSE', 'SPLINE', 'HATCH', 'POINT', 'TEXT', 'DIMENSION', 'MESH', 'INSERT', 'TABLE', 'LEADER']);
-    function validate(data, definition = false) {
+    function validate(data, definition = false, history = false) {
+        if (!definition && !history && data?.sourceArchiveRef) throw Error("Internal source history references are not project files.");
         if (!data || typeof data !== 'object' || data.format !== 'kestrel-cad' || ![1, 2].includes(data.version))
             throw Error('This is not a supported Kestrel CAD project (version 1 or 2).');
         if (!Array.isArray(data.entities) || data.entities.length > 200000)
@@ -135,15 +136,15 @@
             g = K.Geo.geometry(e, .25);
             this.cache.set(e, g);
         } return g; }
-        serialize() { return { format: 'kestrel-cad', version: 2, production: K.clone(this.production || K.Production?.defaults() || null), name: this.name, units: this.units, currentLayer: this.currentLayer, layers: clone(this.layers), entities: clone(this.entities), camera: this.camera }; }
-        snapshot() { return JSON.stringify(this.serialize()); }
-        apply(data) { const d = validate(clone(data)); delete this.constraintReport; this.production = d.production || K.Production?.defaults() || null; this.name = d.name || 'Untitled'; this.units = d.units; this.entities = d.entities; this.layers = d.layers; this.currentLayer = d.currentLayer || this.layers[0].id; this.camera = d.camera; this.cache = new WeakMap(); this.reindex(); }
-        transaction(label, fn) { const before = this.snapshot(); try {
+        serialize(history = false) { return { ...K.SourceArchive?.serialize(this, history), format: 'kestrel-cad', version: 2, production: K.clone(this.production || K.Production?.defaults() || null), name: this.name, units: this.units, currentLayer: this.currentLayer, layers: clone(this.layers), entities: clone(this.entities), camera: this.camera }; }
+        snapshot(history = false) { return JSON.stringify(this.serialize(history)); }
+        apply(data, history = false) { const d = validate(clone(data), false, history); K.SourceArchive?.restore(this, d, history); delete this.constraintReport; this.production = d.production || K.Production?.defaults() || null; this.name = d.name || 'Untitled'; this.units = d.units; this.entities = d.entities; this.layers = d.layers; this.currentLayer = d.currentLayer || this.layers[0].id; this.camera = d.camera; this.cache = new WeakMap(); this.reindex(); }
+        transaction(label, fn) { const before = this.snapshot(true); try {
             fn();
             this.reindex();
             if (K.Constraints) K.Constraints.enforce(this);
-            if (K.Production) { K.Production.associations(this); K.validateProject(this.serialize()); }
-            const after = this.snapshot();
+            if (K.Production) { K.Production.associations(this); K.validateProject(this.serialize(true), false, true); }
+            const after = this.snapshot(true);
             if (before === after)
                 return false;
             this.undoStack.push({ label, state: before });
@@ -154,14 +155,14 @@
             return true;
         }
         catch (error) {
-            this.apply(JSON.parse(before));
+            this.apply(JSON.parse(before), true);
             throw error;
         } }
         changed(label = 'Edit') { this.cache = new WeakMap(); this.revision++; this.dirty = true; this.onChange(label); }
         undo() { const item = this.undoStack.pop(); if (!item)
-            return null; this.redoStack.push({ label: item.label, state: this.snapshot() }); this.apply(JSON.parse(item.state)); this.changed('Undo ' + item.label); return item.label; }
+            return null; this.redoStack.push({ label: item.label, state: this.snapshot(true) }); this.apply(JSON.parse(item.state), true); this.changed('Undo ' + item.label); return item.label; }
         redo() { const item = this.redoStack.pop(); if (!item)
-            return null; this.undoStack.push({ label: item.label, state: this.snapshot() }); this.apply(JSON.parse(item.state)); this.changed('Redo ' + item.label); return item.label; }
+            return null; this.undoStack.push({ label: item.label, state: this.snapshot(true) }); this.apply(JSON.parse(item.state), true); this.changed('Redo ' + item.label); return item.label; }
         transform(ids, m, copy = false) { const result = []; for (const id of ids) {
             const e = this.byId.get(id);
             if (!e || !this.editable(e))

@@ -45,7 +45,7 @@
             const c = Number(lines[i].trim());
             if (!Number.isInteger(c) || c < 0 || c > 1071)
                 throw Error('Invalid DXF group code near line ' + (i + 1) + '.');
-            pairs.push([c, lines[i + 1].trimEnd()]);
+            pairs.push([c, lines[i + 1]]);
         }
         if (!pairs.some(p => p[0] === 0 && p[1].trim() === 'SECTION'))
             throw Error('No DXF SECTION record found.');
@@ -109,7 +109,7 @@
         }
         function skip(type, detail) { report.skipped[type] = (report.skipped[type] || 0) + 1; if (detail && !report.warnings.includes(detail))
             report.warnings.push(detail); }
-        function common(r, inheritedLayer) { const lname = str(r, 8, '0'), c = num(r, 62, 256); return { layer: lname === '0' && inheritedLayer ? inheritedLayer : ensureLayer(lname), color: has(r, 420) ? hexColor(num(r, 420)) : c === 0 ? 'byblock' : c !== 256 ? aciColor(c) : 'bylayer', linetype: str(r, 6, 'ByLayer'), lineweight: num(r, 370) > 0 ? num(r, 370) / 100 : undefined, sourceHandle: str(r, 5) || undefined }; }
+        function common(r, inheritedLayer) { const lname = str(r, 8, '0'), c = num(r, 62, 256); return { layer: lname === '0' && inheritedLayer ? inheritedLayer : ensureLayer(lname), color: has(r, 420) ? hexColor(num(r, 420)) : c === 0 ? 'byblock' : c !== 256 ? aciColor(c) : 'bylayer', linetype: str(r, 6, 'ByLayer'), lineweight: num(r, 370) > 0 ? num(r, 370) / 100 : undefined, hidden: has(r, 60) ? !!num(r, 60) : undefined, sourceHandle: str(r, 5) || undefined }; }
         function emit(e, r, m, inherit) { if (!e)
             return; let out = { ...common(r, inherit), ...e }; if (m)
             out = G.transform(out, m); doc.add(out); report.created++; if (report.created > 200000)
@@ -208,12 +208,12 @@
                             skip(t);
                     }
                     else if (t === 'ATTRIB' && K.Production && doc.entities.at(-1)?.type === 'INSERT') {
-                        doc.entities.at(-1).attributes[decode(str(r, 2))] = decode(str(r, 1));
+                        doc.entities.at(-1).attributes[decode(str(r, 2))] = decode(values(r, 1)[0] || '');
                     }
                     else if (t === 'TEXT' || t === 'MTEXT' || t === 'ATTRIB' || t === 'ATTDEF') {
                         if ((t === 'ATTRIB' || t === 'ATTDEF') && (num(r, 70) & 1))
                             continue;
-                        const raw = t === 'MTEXT' ? values(r, 3).join('') + str(r, 1) : str(r, 1);
+                        const raw = t === 'MTEXT' ? values(r, 3).join('') + (values(r, 1)[0] || '') : (values(r, 1)[0] || '');
                         const align = t === 'MTEXT' ? [2, 5, 8].includes(num(r, 71)) ? 'center' : [3, 6, 9].includes(num(r, 71)) ? 'right' : 'left' : num(r, 72) === 1 ? 'center' : num(r, 72) === 2 ? 'right' : 'left';
                         emit({ type: 'TEXT', position: t === 'MTEXT' ? pt(r) : ocs(align !== 'left' && has(r, 11) ? pt(r, 11) : pt(r), normal(r)), text: t === 'MTEXT' ? stripMText(raw) : decode(raw), attributeTag: t === 'ATTDEF' ? decode(str(r, 2)) : undefined, textStyle:decode(str(r,7,'STANDARD')),widthFactor:t==='MTEXT'?1:num(r,41,1),oblique:t==='MTEXT'?0:num(r,51),backwards:t==='MTEXT'?false:!!(num(r,71)&2),upsideDown:t==='MTEXT'?false:!!(num(r,71)&4),lineSpacing:t==='MTEXT'?1.35*num(r,44,1):1.35, height: Math.max(EPS, num(r, 40, 10)), rotation: t === 'MTEXT' && has(r, 11) ? Math.atan2(num(r, 21), num(r, 11)) : num(r, 50) * Math.PI / 180, align, direction: t === 'MTEXT' && has(r, 11) ? pt(r, 11) : undefined, normal: normal(r) }, r, m, inherit);
                         if (t === 'MTEXT' && !report.warnings.includes('MTEXT inline formatting is approximated; named font styles are retained.'))
@@ -331,10 +331,15 @@
             doc.production.dimstyles = recs.filter(r => r.section === 'TABLES' && r.type === 'DIMSTYLE').map(r => ({ name: decode(str(r, 2, 'STANDARD')), textHeight: Math.max(1e-7, num(r, 140, 2.5)), precision: Math.max(0, Math.min(8, Math.round(num(r, 271, 2)))), scale: Math.max(1e-7, num(r, 144, 1)), prefix: '', suffix: '' }));
             if (!doc.production.dimstyles.length) doc.production.dimstyles = K.Production.defaults().dimstyles;
             for (const block of blocks.values()) {
+                // Model/paper-space definitions are containers, never user INSERT definitions.
+                if (/^\*(?:Model_Space|Paper_Space\d*)$/i.test(block.name)) continue;
                 const start = doc.entities.length;
                 readRecords(block.records, null, null, [block.name]);
                 const entities = doc.entities.splice(start), attributes = entities.filter(e => e.attributeTag).map(e => ({ tag:e.attributeTag, value:e.text, position:e.position, height:e.height, rotation:e.rotation||0, textStyle:e.textStyle, widthFactor:e.widthFactor, oblique:e.oblique, backwards:e.backwards, upsideDown:e.upsideDown, vertical:e.vertical }));
-                doc.production.blocks.push({ id: block.id, name: block.name.replace(/[^a-zA-Z0-9_$ .-]/g, '_') || block.id, entities: entities.filter(e => !e.attributeTag), attributes });
+                let label = decode(block.name).replace(/[\x00-\x1f<>/\\":;?*|=]/g, '_') || block.id;
+                const stem = label; let suffix = 1;
+                while (doc.production.blocks.some(b => b.name.toLowerCase() === label.toLowerCase())) label = stem + '_' + suffix++;
+                doc.production.blocks.push({ id: block.id, name: label, entities: entities.filter(e => !e.attributeTag), attributes });
             }
         }
         readRecords(recs.filter(r => r.section === 'ENTITIES' && !['SECTION', 'ENDSEC'].includes(r.type)));
@@ -349,7 +354,7 @@
         const doc = data instanceof K.Drawing ? data : K.Drawing.from(data), out = [];
         let handle = 0x100;
         const h = () => (++handle).toString(16).toUpperCase(), put = (...pairs) => { for (let i = 0; i < pairs.length; i += 2)
-            out.push(String(pairs[i]), typeof pairs[i + 1] === 'number' ? Number(pairs[i + 1].toFixed(10)).toString() : String(pairs[i + 1])); }, point = (code, p) => put(code, p[0], code + 10, p[1], code + 20, p[2] || 0), esc = s => String(s || '').replace(/[\r\n]/g, ' ').replace(/[^\x20-\x7E]/g, c => { const n = c.codePointAt(0); return n <= 0xffff ? '\\U+' + n.toString(16).toUpperCase().padStart(4, '0') : [...c].map(() => c).join(''); });
+            out.push(String(pairs[i]), typeof pairs[i + 1] === 'number' ? String(pairs[i + 1]) : String(pairs[i + 1])); }, point = (code, p) => put(code, p[0], code + 10, p[1], code + 20, p[2] || 0), esc = s => String(s || '').replace(/[\r\n]/g, ' ').replace(/[^\x20-\x7E]/g, c => { const n = c.codePointAt(0); return n <= 0xffff ? '\\U+' + n.toString(16).toUpperCase().padStart(4, '0') : [...c].map(() => c).join(''); });
         const userBlocks = (doc.production?.blocks || []).map(b => ({ ...b, handle: h() })), userBlockMap = new Map(userBlocks.map(b => [b.id, b]));
         const layerName = id => esc(doc.layer(id).name), modelHandle = h(), paperHandle = h(), dimensionBlocks = doc.entities.filter(e => e.type === 'DIMENSION').map((e, i) => ({ e, name: '*D' + (i + 1), handle: h() })), dimMap = new Map(dimensionBlocks.map(v => [v.e.id, v]));
         put(0, 'SECTION', 2, 'HEADER', 9, '$ACADVER', 1, 'AC1015', 9, '$ACADMAINTVER', 70, 6, 9, '$DWGCODEPAGE', 3, 'ANSI_1252', 9, '$INSUNITS', 70, unitCodes[doc.units] ?? 4, 9, '$MEASUREMENT', 70, ['in', 'ft'].includes(doc.units) ? 0 : 1, 9, '$LUNITS', 70, 2, 9, '$LUPREC', 70, 4, 9, '$HANDSEED', 5, 'FFFFFFF', 9, '$INSBASE');
@@ -378,7 +383,7 @@
         for (const b of [{ name: '*Model_Space', handle: modelHandle }, { name: '*Paper_Space', handle: paperHandle }, ...dimensionBlocks, ...userBlocks])
             put(0, 'BLOCK_RECORD', 5, b.handle, 100, 'AcDbSymbolTableRecord', 100, 'AcDbBlockTableRecord', 2, b.name, 70, 0, 280, 1, 281, 0);
         put(0, 'ENDTAB', 0, 'ENDSEC');
-        function base(type, e, owner = modelHandle) { put(0, type, 5, h(), 330, owner, 100, 'AcDbEntity', 8, layerName(e.layer)); if (e.color === 'byblock') put(62, 0); else if (e.color && e.color !== 'bylayer')
+        function base(type, e, owner = modelHandle) { put(0, type, 5, h(), 330, owner, 100, 'AcDbEntity', 8, layerName(e.layer)); if (e.hidden) put(60, 1); if (e.color === 'byblock') put(62, 0); else if (e.color && e.color !== 'bylayer')
             put(420, parseInt(e.color.slice(1), 16)); if (e.lineweight)
             put(370, Math.round(e.lineweight * 100)); if (e.linetype && e.linetype !== 'ByLayer')
             put(6, /center/i.test(e.linetype) ? 'Center' : /dash/i.test(e.linetype) ? 'Dashed' : 'Continuous'); }
