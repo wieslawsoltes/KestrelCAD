@@ -7,7 +7,7 @@
 const K=root.Kestrel,P=K.Production,{V,M}=K.Math,own=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
 const LIMITS=Object.freeze({bindings:4096,perEntity:2048,sources:32,depth:32,output:2000000,properties:128,tableRows:250});
 const HOSTS=new Set(['TEXT','MTEXT','LEADER','TABLE','INSERT']);
-const PROPERTIES=Object.freeze(['id','type','layer','block','length','area','radius','diameter','x','y','z','text','attribute','cell']);
+const PROPERTIES=Object.freeze(['id','type','layer','block','length','area','volume','surfaceArea','radius','diameter','x','y','z','text','attribute','cell']);
 const DRAWING=Object.freeze(['name','units','entityCount']);
 const TOKENS=/\{\{([A-Za-z][A-Za-z0-9_]*)\}\}/g;
 const validId=v=>typeof v==='string'&&/^[-\w.:]{1,128}$/.test(v);
@@ -30,10 +30,10 @@ function source(s) {
     else if(s.kind==='literal')scalar(s.value);
     else if(s.kind==='parameter') {if(!['sketch','spatial'].includes(s.domain)||!K.Expressions.identifier(s.parameter))throw Error('Invalid named parameter field.');}
     else if(s.kind==='aggregate') {
-        if(!['count','sum','min','max','average'].includes(s.method)||!['length','area'].includes(s.property))throw Error('Invalid aggregate field.');
+        if(!['count','sum','min','max','average'].includes(s.method)||!['length','area','volume','surfaceArea'].includes(s.property))throw Error('Invalid aggregate field.');
         if(!Array.isArray(s.entities)||!s.entities.length||s.entities.length>1000||new Set(s.entities).size!==s.entities.length||s.entities.some(id=>!validId(id)))throw Error('Aggregate requires distinct source identities (maximum 1000).');
     } else throw Error('Unsupported native field source.');
-    if(s.units!=null&&(s.kind==='aggregate'&&s.method==='count'||!own(P.MM,s.units)||s.units==='unitless'||!['object','aggregate'].includes(s.kind)||!['length','area','radius','diameter','x','y','z'].includes(s.property)))throw Error('Explicit output units require a dimensional object property.');
+    if(s.units!=null&&(s.kind==='aggregate'&&s.method==='count'||!own(P.MM,s.units)||s.units==='unitless'||!['object','aggregate'].includes(s.kind)||!['length','area','volume','surfaceArea','radius','diameter','x','y','z'].includes(s.property)))throw Error('Explicit output units require a dimensional object property.');
 }
 function slot(e,target) {
     if(!HOSTS.has(e.type))throw Error('Fields require text, leader, table or block attribute hosts.');
@@ -87,6 +87,28 @@ function validate(doc) {
     graph(doc);
 }
 function targetOf(s){return s.property==='cell'?`cell:${s.row}:${s.column}`:s.property==='attribute'?'attribute:'+s.tag:'text';}
+// Native mass caches originate in the local kernel. Placement changes must not
+// substitute display-triangle measurements for the authoritative B-rep quantities.
+function nativeQuantity(e, property) {
+    if (!e?.solid || !K.Kernel) throw Error('Quantity requires an authoritative native B-rep body.');
+    K.Kernel.validate(e);
+    const solid = e.solid, matrix = solid.transform;
+    if ([3, 7, 11].some(i => Math.abs(matrix[i]) > 1e-12) || Math.abs(matrix[15] - 1) > 1e-12)
+        throw Error('Native quantities require an affine placement.');
+    const axes = [matrix.slice(0, 3), matrix.slice(4, 7), matrix.slice(8, 11)];
+    if (property === 'volume') {
+        if (!Number.isInteger(solid.solidCount) || solid.solidCount < 1)
+            throw Error('Volume requires a closed native solid, not an open sheet or curve.');
+        return finite(solid.volume * Math.abs(V.dot(axes[0], V.cross(axes[1], axes[2]))), 'native volume', 0);
+    }
+    if (property !== 'surfaceArea') throw Error('Unsupported native quantity.');
+    if (!solid.faces.length) throw Error('Surface area requires native faces.');
+    const lengths = axes.map(V.len), scale = lengths[0];
+    if (lengths.some(n => Math.abs(n - scale) > scale * 1e-9) ||
+        [[0,1],[0,2],[1,2]].some(([a,b]) => Math.abs(V.dot(axes[a], axes[b])) > scale * scale * 1e-9))
+        throw Error('Surface area after nonuniform scale or shear requires native recomputation.');
+    return finite(solid.area * scale * scale, 'native surface area', 0);
+}
 function objectValue(doc,e,s,read) {
     if(!e)throw Error('Source object is missing: '+s.entity);
     let value,power=0;
@@ -101,6 +123,7 @@ function objectValue(doc,e,s,read) {
         else value=K.Productivity.area(e);
         if(value==null)throw Error('This source has no supported analytic enclosed area.');power=2;break;
     }
+    case 'volume':case 'surfaceArea':value=nativeQuantity(e,s.property);power=s.property==='volume'?3:2;break;
     case 'radius':case 'diameter':{if(!['CIRCLE','ARC'].includes(e.type))throw Error('Radius requires a circle or circular arc.');K.Productivity.curve(e);value=V.len(K.Geo.conicAxes(e).x)*(s.property==='diameter'?2:1);power=1;break;}
     case 'x':case 'y':case 'z':{const pos=e.position||e.center||(e.type==='INSERT'?M.point(e.matrix,[0,0,0]):e.points?.[0]);if(!pos)throw Error('Source has no insertion point, center or start point.');value=pos[['x','y','z'].indexOf(s.property)];power=1;break;}
     case 'text':case 'cell':case 'attribute':{
@@ -210,5 +233,5 @@ function linkedTable(doc,ids,position=[0,0,0],options={}) {
 // Native persistence and static interoperability share one evaluator, also in the worker.
 const originalValidate=P.validate;P.validate=function(data){originalValidate(data);validate(data);};
 const originalWrite=K.Exchange.writeDXF;K.Exchange.writeDXF=function(data){return originalWrite((data.entities||[]).some(e=>e.fieldBindings?.length)?exportData(data):data);};
-K.Fields={LIMITS,HOSTS,PROPERTIES,DRAWING,slot,source,validateBinding,validateProperties,validate,propertyRows,evaluate,refresh,setBinding,freeze,setProperties,remap,finishCopy,exportData,linkedTable};
+K.Fields={LIMITS,HOSTS,PROPERTIES,DRAWING,slot,source,nativeQuantity,validateBinding,validateProperties,validate,propertyRows,evaluate,refresh,setBinding,freeze,setProperties,remap,finishCopy,exportData,linkedTable};
 })(typeof window!=='undefined'?window:globalThis);

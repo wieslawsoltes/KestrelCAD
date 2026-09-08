@@ -6,6 +6,14 @@ Local-first 2D drafting and 3D modeling in plain HTML, CSS and JavaScript. A cus
 
 **Branch builds are not the live site.** Changes are proposed through PRs; GitHub Pages publishes `main` only after merge. This is an original Kestrel application, not an Autodesk product or a feature-complete AutoCAD replacement.
 
+## Native quantity annotations
+
+FIELD now binds validated native-body volume and surface-area values, with cubed/squared unit conversion, live source updates and undo. FIELDTABLE selects quantity columns for native solid selections. Nonuniform surface-area transforms explicitly require native recomputation rather than using display triangles. [Native quantity semantics](docs/FIELDS.md#native-solid-quantities).
+
+## Annotation search and replacement
+
+`FIND`, `REPLACE`, and Ctrl/Cmd+F search visible annotation content, preserve rich MTEXT controls during replacement, protect linked fields and locked objects, and group changes with their derived updates into a single undo step. [Scopes, Unicode behavior and safety boundaries](docs/TEXT-SEARCH.md).
+
 ## Editable native edges and section curves
 
 `XEDGES` and `SECTIONCURVES` create editable analytic lines, conics and rational splines from the actual native B-rep, with the source retained and one-step undo. The native profile tools also accept clamped rational spline profiles and open spline sweep paths. DXF knot tolerances and browser spline endpoint evaluation preserve small knot spans. [Native curve workflows and boundaries](docs/NATIVE-CURVES.md).
