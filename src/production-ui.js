@@ -34,7 +34,7 @@
             if(e.anchors){if(e.anchors.every(a=>ids.has(a.entity)))e.anchors=e.anchors.map(a=>({...a,entity:ids.get(a.entity)}));else delete e.anchors;}
             if(e.boundaryIds){if(e.boundaryIds.every(id=>ids.has(id)))e.boundaryIds=e.boundaryIds.map(id=>ids.get(id));else delete e.boundaryIds;}
             added.push(doc.add(e).id);
-        }doc.reindex();doc.operationWarnings=K.Constraints?.copyInto(doc,data,ids,matrix)||[];return added;
+        }doc.reindex();doc.operationWarnings=[...(K.Constraints?.copyInto(doc,data,ids,matrix)||[]),...(K.SpatialConstraints?.copyInto(doc,data,ids,matrix)||[])];return added;
     }
     P.copyInto=copyInto;
     K.installProductionUI = function(App) {

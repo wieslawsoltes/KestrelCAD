@@ -121,3 +121,16 @@ typed records, including legacy group codes and exact 64-bit metadata values.
 Original DWG bytes and converter DXF are retained separately when the optional
 codec is available; this is not unrestricted lossless DWG editing.
 See [source fidelity, commands and supported edit boundaries](docs/SOURCE-DOCUMENTS.md).
+
+
+## Free-space 3D constraints and assembly mates
+
+The **Assembly** ribbon adds world-XYZ geometric and dimensional constraints for points,
+lines and straight polylines, and rigid poses for meshes, retained native B-rep bodies
+and block references. `3DASSEMBLY` opens a parameter-driven lift example. `3DPARAMETERS`,
+`3DCONSTRAINTS` and `3DDOF` edit expressions, manage relationships and report local freedoms.
+Hinge, slider, coaxial, plane and fastened mates coexist with the planar solver on disjoint
+geometry. Failed solves roll back atomically. Native project persistence, unit conversion
+and complete-selection clipboard transfer retain the graph. This is a bounded numerical
+solver, not general deformable-solid/contact or proprietary DWG constraint compatibility.
+See [spatial constraint authoring, numerical limits and tests](docs/SPATIAL-CONSTRAINTS.md).
