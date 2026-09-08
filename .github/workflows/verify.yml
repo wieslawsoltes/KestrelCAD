@@ -20,6 +20,18 @@ jobs:
     steps:
       - name: Check out the proposed source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Preserve exact source for review
+        run: |
+          mkdir -p "$RUNNER_TEMP/cad-source"
+          git archive --format=tar HEAD > "$RUNNER_TEMP/cad-source/source.tar"
+          git rev-parse HEAD > "$RUNNER_TEMP/cad-source/checkout-sha.txt"
+          printf '%s\n' "$SOURCE_HEAD" > "$RUNNER_TEMP/cad-source/pr-head-sha.txt"
+      - name: Upload review source
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+        with:
+          name: review-source
+          path: ${{ runner.temp }}/cad-source
+          retention-days: 14
       - name: Install test-only dependencies
         run: |
           python3 -m pip install -r requirements-dev.txt
@@ -28,3 +40,17 @@ jobs:
           python3 -c "from playwright.sync_api import sync_playwright; p = sync_playwright().start(); print('CHROMIUM_PATH=' + p.chromium.executable_path); p.stop()" >> "$GITHUB_ENV"
       - name: Test the current source and build the standalone editor
         run: python3 tools/verify.py --previews
+      - name: Collect test evidence
+        if: always()
+        run: |
+          mkdir -p "$RUNNER_TEMP/cad-evidence"
+          cp "$RUNNER_TEMP/cad-source/"*.txt "$RUNNER_TEMP/cad-evidence/"
+          if [ -d tests/results ]; then cp -R tests/results "$RUNNER_TEMP/cad-evidence/"; fi
+          if [ -f build-info.json ]; then cp build-info.json "$RUNNER_TEMP/cad-evidence/"; fi
+      - name: Upload test evidence
+        if: always()
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+        with:
+          name: verification-evidence
+          path: ${{ runner.temp }}/cad-evidence
+          retention-days: 14
