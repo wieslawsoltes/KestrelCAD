@@ -57,7 +57,7 @@ Damped least squares uses central-difference Jacobians, normalized world coordin
 
 Default budgets: 192 free scalars, 768 referenced scalar/residual components, 256 constraints, 128 parameters, 100 iterations and 1.5 seconds. Residual threshold is 1e-9 in normalized length/direction coordinates; rank threshold is 1e-7. DOF is local and tolerance-dependent. Vector equations have inherently redundant components, so `redundantEquations` is not a count of unnecessary user constraints.
 
-This is not a general deformable-solid, NURBS-surface, spline or flexible-conic solver. Arbitrary shell contacts, collision avoidance, joint limits, dynamics, kinematic animation, inferred face mates, persistent topological naming and proprietary DWG constraint graph compatibility are not implemented. It is a numerical solver, not exact arithmetic or a manufacturing certification.
+This is not a general deformable-solid, NURBS-surface, spline or flexible-conic solver. Arbitrary shell contacts, collision avoidance, dynamics, kinematic animation, inferred face mates, persistent topological naming and proprietary DWG constraint graph compatibility are not implemented. It is a numerical solver, not exact arithmetic or a manufacturing certification.
 
 ## Verification
 
@@ -66,3 +66,8 @@ This is not a general deformable-solid, NURBS-surface, spline or flexible-conic 
 - `python3 tests/spatial.browser.py`: real editor ribbon/dialog/clipboard/units/download/history workflows, not mocked DOM controls.
 
 Primary background references: [SolveSpace reference](https://solvespace.com/ref.pl) and [CadQuery assembly constraint documentation](https://cadquery.readthedocs.io/en/latest/assy.html). This library is an original implementation; those packages are not invoked by its solver.
+
+## Joint travel
+
+Hinge and slider mates now accept bounded travel and expression-driven positions.
+See [joint limits, coordinate conventions and diagnostics](JOINT-LIMITS.md).

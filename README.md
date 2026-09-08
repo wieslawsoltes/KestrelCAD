@@ -145,3 +145,11 @@ Curved/unknown geometry rejects. These commands exchange selected geometry, not
 lossless ACIS application metadata or a complete drawing. Original SAT/SAB files
 remain separate. Install the updated `requirements-kernel.txt`.
 See [commands, units, topology checks and compatibility boundaries](docs/ACIS-EXCHANGE.md).
+
+## Joint limits and drives
+
+**Assembly → Joint limits / drive** (`JOINTLIMITS`, `DRIVEJOINT`) adds minimum/maximum
+slider travel and signed hinge angles, optional position drivers, named expressions,
+transactional rollback, and separate unilateral-stop diagnostics. Native projects,
+undo/redo and complete-selection clipboard retain settings.
+See [joint travel and its numerical limits](docs/JOINT-LIMITS.md).
