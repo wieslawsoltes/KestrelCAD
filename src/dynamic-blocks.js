@@ -4,7 +4,7 @@
     const K = root.Kestrel, P = K.Production, G = K.Geo, {V, M} = K.Math;
     const clone = K.clone, LIMIT = 20000;
     const PARAM_TYPES = ['number', 'length', 'angle', 'integer', 'boolean', 'enum'];
-    const ACTION_TYPES = ['move', 'stretch', 'rotate', 'scale', 'flip', 'array', 'polar-array', 'visibility'];
+    const ACTION_TYPES = ['move', 'stretch', 'rotate', 'scale', 'flip', 'array', 'polar-array', 'polar-stretch', 'visibility'];
     const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
     const object = (v, label) => {
         if (!v || typeof v !== 'object' || Array.isArray(v) ||
@@ -107,6 +107,23 @@
             if (a.type==='scale') {formula(a.factor);P.point(a.center||[0,0,0]);}
             if (a.type==='flip') {if(names.get(a.parameter)?.type!=='boolean')throw Error('Flip needs a boolean parameter.');P.point(a.origin||[0,0,0]);P.point(a.normal||[1,0,0]);if(V.len(a.normal||[1,0,0])<1e-9)throw Error('Zero reflection normal.');}
             if (a.type==='array') for (const k of ['columns','rows','dx','dy']) formula(a[k]??(k==='rows'?1:0));
+            if (a.type==='polar-stretch') {
+                formula(a.length);formula(a.angle??0);formula(a.multiplier??1);
+                P.num(a.baseLength,'Base polar length',1e-7,1e9);
+                P.point(a.center||[0,0,0]);P.point(a.axis||[0,0,1]);P.point(a.direction||[1,0,0]);
+                if(V.len(a.axis||[0,0,1])<1e-7 || V.len(a.direction||[1,0,0])<1e-7)
+                    throw Error('Polar stretch axis and reference direction must be nonzero.');
+                if(Math.abs(V.dot(V.norm(a.axis||[0,0,1]),V.norm(a.direction||[1,0,0])))>1e-9)
+                    throw Error('Polar stretch reference direction must be perpendicular to its rotation axis.');
+                P.point(a.min);P.point(a.max);
+                if(a.min.some((v,i)=>v>a.max[i]))throw Error('Stretch minimum exceeds maximum.');
+                for(const key of ['rotateOnly','moveOnly'])if(a[key]!=null){
+                    if(!Array.isArray(a[key]))throw Error('Invalid polar stretch member modes.');
+                    if(a[key].length)targets(a[key]);
+                    if(a[key].some(id=>!a.targets.includes(id)))throw Error('Polar member mode is outside the action target set.');
+                }
+                if((a.rotateOnly||[]).some(id=>(a.moveOnly||[]).includes(id)))throw Error('A polar member cannot both move whole and rotate only.');
+            }
             if (a.type==='polar-array') {
                 formula(a.count); formula(a.angle??360);
                 P.point(a.center||[0,0,0]); P.point(a.axis||[0,0,1]);
@@ -116,6 +133,56 @@
             }
         }
         return {d,names,driven};
+    }
+    // Classify conics analytically: display samples are not safe stretch boundaries.
+    function conicFrame(e, inside, lo, hi) {
+        const {x,y}=G.conicAxes(e), start=e.startAngle||0;
+        const span=e.type==='CIRCLE'||e.endAngle==null ? K.Math.TAU : K.Math.sweep(start,e.endAngle);
+        const times=[0,span], add=t=>{const d=K.Math.angle(t-start);if(d<=span+1e-10)times.push(Math.min(d,span));};
+        for(let i=0;i<3;i++) {
+            const radius=Math.hypot(x[i],y[i]);
+            if(radius<1e-15)continue;
+            const phase=Math.atan2(y[i],x[i]);add(phase);add(phase+Math.PI);
+            for(const bound of [lo[i],hi[i]]) {
+                const q=(bound-e.center[i])/radius;
+                if(q>=-1 && q<=1){const a=Math.acos(q);add(phase+a);add(phase-a);}
+            }
+        }
+        times.sort((a,b)=>a-b);
+        const points=times.map(t=>G.conicPoint(e,start+t));
+        // Midpoints classify spans between all exact frame crossings, including
+        // a conic surrounding the frame without actually entering it.
+        for(let i=1;i<times.length;i++)points.push(G.conicPoint(e,start+(times[i-1]+times[i])/2));
+        return {all:points.every(inside), any:points.some(inside)};
+    }
+    function polarStretch(e,a,delta,transform) {
+        const inside=p=>p.every((v,i)=>v>=a.min[i]-1e-9 && v<=a.max[i]+1e-9);
+        const translate=()=>transform(e,M.translation(...delta));
+        if(e.type==='LINE'||e.type==='POLYLINE') {
+            const flags=e.points.map(inside);
+            // A curved segment can move rigidly, but moving only one endpoint
+            // would require a different arc definition, not the old bulge.
+            for(let i=0;i<e.points.length-(e.closed?0:1);i++)
+                if(Math.abs(e.bulges?.[i]||0)>1e-12 && flags[i]!==flags[(i+1)%flags.length])
+                    throw Error('Polar stretch cannot partially deform a bulged segment. Choose Move whole or Rotate only.');
+            return {...e,points:e.points.map((p,i)=>flags[i]?V.add(p,delta):p)};
+        }
+        if(['POINT','TEXT','MTEXT','INSERT'].includes(e.type)) {
+            const anchor=e.type==='INSERT'?M.point(e.matrix,[0,0,0]):e.position;
+            return inside(anchor)?translate():e;
+        }
+        let classification;
+        if(['CIRCLE','ARC','ELLIPSE'].includes(e.type))classification=conicFrame(e,inside,a.min,a.max);
+        else if(e.type==='MESH' && !e.solid) {
+            // A convex box containing every vertex contains every mesh face.
+            // Otherwise refuse deformation when its bounds overlap the frame.
+            const all=e.vertices.every(inside);
+            const separated=[0,1,2].some(i=>e.vertices.every(p=>p[i]<a.min[i]-1e-9)||e.vertices.every(p=>p[i]>a.max[i]+1e-9));
+            classification={all,any:!separated};
+        } else throw Error('Polar stretch requires an explicit Move whole or Rotate only mode for '+(e.solid?'native B-rep':e.type)+'.');
+        if(classification.all)return translate();
+        if(classification.any)throw Error('Polar stretch cannot partially deform '+e.type+'. Choose Move whole or Rotate only.');
+        return e;
     }
     function resolve(block, overrides={}) {
         const {d,names,driven}=schema(block);object(overrides,'instance parameter values');
@@ -207,6 +274,23 @@
                     if(points.length&&points.every(inside))return {...r,e:transform(e,M.translation(...delta))};
                     if(points.some(inside))throw Error('Cannot partially stretch '+e.type+'. Use a move, scale or rotate action.');
                     return r;
+                });
+            }
+            if(a.type==='polar-stretch') {
+                const length=P.num(f(a.length),'Polar length',1e-7,1e9);
+                const offset=(length-a.baseLength)*f(a.multiplier??1);
+                P.num(offset,'Polar displacement',-1e9,1e9);
+                const delta=V.mul(V.norm(a.direction||[1,0,0]),offset);
+                const rotation=M.around(a.center||[0,0,0],M.rotation(f(a.angle??0)*Math.PI/180,a.axis||[0,0,1]));
+                const rotateOnly=new Set(a.rotateOnly||[]),moveOnly=new Set(a.moveOnly||[]);
+                rows=rows.map(r=>{
+                    if(!selected.has(r.source))return r;
+                    // Membership is in the incoming action-stage frame. Apply
+                    // translation first, then rotate it into the new ray direction.
+                    let e=r.e;
+                    if(offset!==0 && !rotateOnly.has(r.source))
+                        e=moveOnly.has(r.source)?transform(e,M.translation(...delta)):polarStretch(e,a,delta,transform);
+                    return {...r,e:transform(e,rotation)};
                 });
             }
             if(a.type==='polar-array') {

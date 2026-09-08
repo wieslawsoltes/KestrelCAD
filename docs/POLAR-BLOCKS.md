@@ -51,7 +51,7 @@ The form uses all outputs in the selected table and replaces them when switching
 
 Native `.kcad` keeps actions, definitions, lookup tables and independent overrides. Existing definition-aware clipboard transfer preserves the editable behavior; destination-unit scaling remains in the INSERT transform. Standard DXF output carries evaluated static BLOCK/INSERT geometry with interpolated text and correct circular OCS data. It does not encode the native behavior as proprietary evaluation records. Source-preserving export keeps its existing guards instead of claiming an equivalent edited action graph.
 
-This is not complete AutoCAD dynamic-block or associative-array compatibility. It does not add native DWG evaluator records, automatic lookup grips, range/interpolated lookup values, polar-stretch actions, per-item overrides, associative external path arrays or persistent geometric base-point references.
+This is not complete AutoCAD dynamic-block or associative-array compatibility. It does not add native DWG evaluator records, automatic lookup grips, range/interpolated lookup values, per-item overrides, associative external path arrays or persistent geometric base-point references.
 
 ## Verification
 
@@ -66,3 +66,5 @@ python3 tests/polar_blocks_interop.py
 Numerical checks cover exact positions, analytic curves, ordered actions, per-instance regeneration, identity safety, native persistence, inverse matching and rollback. Browser checks exercise the real ribbon, authoring and property forms, command alias, undo/redo, clipboard and worker/download paths. Native checks use actual OCCT BREP and STEP output, not synthetic kernel responses. Independent ezdxf audits require zero errors or automatic fixes. These suites are automatically included by `tools/verify.py`; hardware WebGPU remains a separately unverified path.
 
 Primary workflow references: [polar arrays](https://help.autodesk.com/cloudhelp/2020/ENU/AutoCAD-Core/files/GUID-A6E74297-2CB3-4B1C-A07B-69CD08630052.htm) and [lookup actions](https://help.autodesk.com/cloudhelp/2022/ENU/AutoCAD-LT/files/GUID-AA47163A-9ECC-49FE-92DB-AB05D2691E1C.htm). The schema and evaluator here are Kestrel-native implementations, not a claim of identical proprietary serialization or UI behavior.
+
+Polar-stretch actions are described separately in [POLAR-STRETCH.md](POLAR-STRETCH.md).

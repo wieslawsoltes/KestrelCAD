@@ -1,0 +1,56 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs');
+for(const name of ['math','geometry','model','exchange','production','kernel','constraints','spatial-constraints','dynamic-blocks'])require('../src/'+name+'.js');
+require('./polar-stretch.fixture.js');
+const K=globalThis.Kestrel,D=K.DynamicBlocks,P=K.Production,{V,M}=K.Math,results=[];
+const test=(name,fn)=>{try{fn();results.push({name,status:'passed'});console.log('PASS',name);}catch(e){results.push({name,status:'failed',error:e.stack});console.error('FAIL',name,e);}};
+const near=(a,b)=>{if(Array.isArray(a)){assert.equal(a.length,b.length);return a.forEach((v,i)=>near(v,b[i]));}assert(Math.abs(a-b)<1e-7,`${a} != ${b}`);};
+const expand=f=>P.expand(f.doc,f.doc.byId.get(f.insert.id));
+const member=(f,id)=>expand(f).find(e=>e.id.endsWith('/'+id)||e.id===id);
+const value=(f,p)=>D.setValues(f.doc,f.insert.id,p);
+function fixture(options){return makePolarStretchFixture(options);}
+function setAction(f,patch){const d=K.clone(f.doc.production.blocks[0].dynamic);Object.assign(d.actions[0],patch);D.setDefinition(f.doc,f.block.id,d);}
+function entityFixture(e,options={}){
+ const f=fixture();f.doc.transaction('Member fixture',()=>{f.doc.production.blocks[0].entities=[{layer:'0',...e,id:'arm'}];f.doc.production.blocks[0].attributes=[];Object.assign(f.doc.production.blocks[0].dynamic.actions[0],{targets:['arm'],rotateOnly:[],...options});});return f;
+}
+const output=f=>expand(f)[0];
+test('default polar reach retains the two endpoints',()=>{const f=fixture();near(output(f).points,[[0,0,0],[10,0,0]]);});
+test('changing reach stretches the selected far endpoint only',()=>{const f=fixture();value(f,{Reach:20});near(output(f).points,[[0,0,0],[20,0,0]]);near(expand(f).find(e=>e.type==='CIRCLE').center,[20,0,0]);});
+test('combined reach and rotation applies translation along the rotated ray',()=>{const f=fixture();value(f,{Reach:20,Angle:90});near(output(f).points,[[0,0,0],[0,20,0]]);near(expand(f).find(e=>e.type==='CIRCLE').center,[0,20,0]);});
+test('negative rotation and shorter reach keep the pivot fixed',()=>{const f=fixture();value(f,{Reach:4,Angle:-90});near(output(f).points,[[0,0,0],[0,-4,0]]);});
+test('rotate-only members turn but do not inherit the reach delta',()=>{const f=fixture({rotateOnly:['pivot','tip']});value(f,{Reach:20,Angle:90});near(expand(f)[1].center,[0,10,0]);near(expand(f)[2].points,[[0,3,0],[0,5,0]]);});
+test('untargeted members are unaffected even by combined edits',()=>{const f=fixture();value(f,{Reach:20,Angle:90});near(expand(f).find(e=>e.type==='POINT').position,[40,0,0]);});
+test('attribute anchors stretch and rotate while template values regenerate',()=>{const f=fixture();value(f,{Reach:20,Angle:90});const t=expand(f).find(e=>e.attributeTag);near(t.position,[1,20,0]);assert.equal(t.text,'Reach 20');});
+test('nonunit reference direction is normalized',()=>{const f=fixture({direction:[2,0,0]});value(f,{Reach:20});near(output(f).points[1],[20,0,0]);});
+test('arbitrary 3D axis is not projected to XY',()=>{const f=fixture({axis:[0,2,0]});value(f,{Reach:20,Angle:90});near(output(f).points[1],[0,0,-20]);});
+test('reference ray can be any direction in the rotation plane',()=>{const f=fixture({direction:[0,1,0]});value(f,{Reach:20,Angle:90});near(output(f).points[1],[-10,10,0]);});
+test('explicit center rotates around a non-origin pivot',()=>{const f=fixture({center:[2,3,4]});value(f,{Reach:20,Angle:90});near(output(f).points,[[5,1,0],[5,21,0]]);});
+test('distance multiplier scales only the reach change',()=>{const f=fixture({multiplier:.5});value(f,{Reach:20,Angle:90});near(output(f).points[1],[0,15,0]);});
+test('negative multiplier can move selected points toward the pivot',()=>{const f=fixture({multiplier:-.5});value(f,{Reach:20});near(output(f).points[1],[5,0,0]);});
+test('zero multiplier still rotates without stretching',()=>{const f=fixture({multiplier:0});value(f,{Reach:20,Angle:90});near(output(f).points[1],[0,10,0]);});
+test('move-whole mode translates both endpoints regardless of crossing frame',()=>{const f=fixture({moveOnly:['arm']});value(f,{Reach:20,Angle:90});near(output(f).points,[[0,10,0],[0,20,0]]);});
+test('a selected object outside the frame still rotates',()=>{const f=fixture({rotateOnly:[]});value(f,{Reach:20,Angle:90});near(expand(f)[2].points,[[0,3,0],[0,5,0]]);});
+test('repeated parameter changes do not accumulate deformation',()=>{const f=fixture(),before=JSON.stringify(f.block);for(let i=0;i<10;i++){value(f,{Reach:30,Angle:135});value(f,{Reach:10,Angle:0});}near(output(f).points[1],[10,0,0]);assert.equal(JSON.stringify(f.doc.production.blocks[0]),before);});
+test('different instances keep independent reach and angle',()=>{const f=fixture(),other=P.insertBlock(f.doc,f.block.id,[100,0,0]);value(f,{Reach:20});D.setValues(f.doc,other.id,{Reach:30,Angle:90});near(output(f).points[1],[20,0,0]);near(P.expand(f.doc,f.doc.byId.get(other.id))[0].points[1],[100,30,0]);});
+test('native save/reopen retains the action and editable overrides',()=>{const f=fixture();value(f,{Reach:20,Angle:90});const data=f.doc.serialize(),d=K.Drawing.from(data);assert.deepEqual(d.serialize(),data);near(P.expand(d,d.entities[0])[0].points[1],[0,20,0]);});
+test('one parameter edit is one undoable and redoable transaction',()=>{const f=fixture(),n=f.doc.undoStack.length;value(f,{Reach:20,Angle:90});assert.equal(f.doc.undoStack.length,n+1);f.doc.undo();near(output(f).points[1],[10,0,0]);f.doc.redo();near(output(f).points[1],[0,20,0]);});
+test('outer nonuniform reflection applies after local regeneration',()=>{const f=fixture();value(f,{Reach:20,Angle:90});f.doc.transaction('Transform instance',()=>f.doc.replace(f.insert.id,K.Geo.transform(f.doc.byId.get(f.insert.id),M.scale(-2,3,1))));near(output(f).points[1],[0,60,0]);});
+test('later actions affect the stretched result',()=>{const f=fixture(),d=K.clone(f.block.dynamic);d.actions.push({type:'move',targets:['arm'],z:5});D.setDefinition(f.doc,f.block.id,d);value(f,{Reach:20,Angle:90});near(output(f).points[1],[0,20,5]);});
+test('earlier array descendants are classified at the current action stage',()=>{const f=fixture(),d=K.clone(f.block.dynamic);d.actions.unshift({type:'array',targets:['arm'],columns:2,dx:50});D.setDefinition(f.doc,f.block.id,d);value(f,{Reach:20,Angle:90});const a=expand(f).filter(e=>e.type==='LINE');near(a[0].points[1],[0,20,0]);near(a.at(-1).points,[[0,50,0],[0,60,0]]);});
+test('fully enclosed conic remains analytic under stretch and rotation',()=>{const f=entityFixture({type:'ELLIPSE',center:[10,0,0],rx:1,ry:1.5});value(f,{Reach:20,Angle:90});near(output(f).center,[0,20,0]);near(V.len(output(f).axisX),1);near(V.len(output(f).axisY),1.5);});
+test('partial circle deformation rejects instead of sampling or changing radius',()=>{const f=entityFixture({type:'CIRCLE',center:[12,0,0],radius:1});const before=f.doc.snapshot(),n=f.doc.undoStack.length;assert.throws(()=>value(f,{Reach:20}),/partially/);assert.equal(f.doc.snapshot(),before);assert.equal(f.doc.undoStack.length,n);});
+test('a circle surrounding the box but never entering it is only rotated',()=>{const f=entityFixture({type:'CIRCLE',center:[10,0,0],radius:10});value(f,{Reach:20,Angle:90});near(output(f).center,[0,10,0]);near(output(f).radius,10);});
+test('an arc entirely outside the frame does not stretch based on its full ellipse bounds',()=>{const f=entityFixture({type:'ARC',center:[10,0,0],radius:3,startAngle:0,endAngle:Math.PI/6});value(f,{Reach:20,Angle:90});near(output(f).center,[0,10,0]);near(output(f).radius,3);});
+test('an exact conic-frame crossing between display samples rejects',()=>{const theta=.1234,f=entityFixture({type:'CIRCLE',center:[0,0,0],radius:10},{min:[10*Math.cos(theta)-1e-5,10*Math.sin(theta)-1e-5,-1],max:[10*Math.cos(theta)+1e-5,10*Math.sin(theta)+1e-5,1]});assert.throws(()=>value(f,{Reach:20}),/partially/);});
+test('straight polyline moves only vertices in the crossing box',()=>{const f=entityFixture({type:'POLYLINE',closed:true,points:[[0,-1,0],[10,-1,0],[10,1,0],[0,1,0]]});value(f,{Reach:20});near(output(f).points,[[0,-1,0],[20,-1,0],[20,1,0],[0,1,0]]);});
+test('a bulged segment whose endpoints both move retains its exact bulge',()=>{const f=entityFixture({type:'POLYLINE',points:[[9,-1,0],[11,1,0]],bulges:[.5,0]});value(f,{Reach:20,Angle:90});near(output(f).points,[[1,19,0],[-1,21,0]]);near(output(f).bulges,[.5,0]);});
+test('moving only one endpoint of a bulged segment rejects',()=>{const f=entityFixture({type:'POLYLINE',points:[[0,0,0],[10,0,0]],bulges:[.5,0]});assert.throws(()=>value(f,{Reach:20}),/bulged/);});
+test('move-whole mode rigidly moves a crossing bulged segment',()=>{const f=entityFixture({type:'POLYLINE',points:[[0,0,0],[10,0,0]],bulges:[.5,0]},{moveOnly:['arm']});value(f,{Reach:20});near(output(f).points,[[10,0,0],[20,0,0]]);near(output(f).bulges,[.5,0]);});
+test('fully enclosed mesh faces move rigidly',()=>{const f=entityFixture(K.Geo.box([9,-1,-1],2,2,2));value(f,{Reach:20});near(output(f).vertices[0],[19,-1,-1]);});
+test('partially overlapping mesh is not silently deformed',()=>{const f=entityFixture(K.Geo.box([7,-1,-1],2,2,2));assert.throws(()=>value(f,{Reach:20}),/partially/);});
+test('explicit rigid mode supports spline members without approximation',()=>{const f=entityFixture({type:'SPLINE',degree:2,controlPoints:[[0,0,0],[5,3,0],[10,0,0]]},{moveOnly:['arm']});value(f,{Reach:20,Angle:90});near(output(f).controlPoints,[[0,10,0],[-3,15,0],[0,20,0]]);});
+test('unsupported automatic member classification rejects',()=>{const f=entityFixture({type:'SPLINE',degree:2,controlPoints:[[0,0,0],[5,3,0],[10,0,0]]});assert.throws(()=>value(f,{Reach:20}),/explicit/);});
+for(const [name,patch]of Object.entries({zeroBase:{baseLength:0},nonfiniteLength:{length:Infinity},zeroAxis:{axis:[0,0,0]},zeroDirection:{direction:[0,0,0]},notPerpendicular:{direction:[1,0,1]},invertedFrame:{min:[13,-2,-2]},badFrame:{max:[1,2]},unknownModeId:{rotateOnly:['missing']},modeNotSelected:{moveOnly:['fixed']},conflictingModes:{rotateOnly:['tip'],moveOnly:['tip']},duplicateMode:{rotateOnly:['tip','tip']},nonarrayMode:{moveOnly:'arm'},nonfiniteMultiplier:{multiplier:NaN},executableExpression:{angle:'alert(1)'}}))test('invalid '+name+' rejects authoring atomically',()=>{const f=fixture(),before=f.doc.snapshot();assert.throws(()=>setAction(f,patch));assert.equal(f.doc.snapshot(),before);});
+test('negative evaluated reach rejects even when the expression is syntactically valid',()=>{const f=fixture();assert.throws(()=>setAction(f,{length:-10}),/Polar length/);});
+test('locked instances reject parameter edits',()=>{const f=fixture();f.doc.transaction('Lock layer',()=>f.doc.layers.find(l=>l.id==='0').locked=true);assert.throws(()=>value(f,{Reach:20}),/editable/);});
+const failed=results.filter(r=>r.status==='failed').length;fs.mkdirSync('tests/results',{recursive:true});fs.writeFileSync('tests/results/polar-stretch-results.json',JSON.stringify({passed:results.length-failed,failed,tests:results},null,2)+'\n');console.log('RESULT',results.length-failed,'passed;',failed,'failed');process.exitCode=failed?1:0;
