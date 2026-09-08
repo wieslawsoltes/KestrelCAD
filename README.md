@@ -153,3 +153,12 @@ slider travel and signed hinge angles, optional position drivers, named expressi
 transactional rollback, and separate unilateral-stop diagnostics. Native projects,
 undo/redo and complete-selection clipboard retain settings.
 See [joint travel and its numerical limits](docs/JOINT-LIMITS.md).
+
+## Polar configurable blocks and lookup matching
+
+The **Blocks** ribbon's `BACTION` dialog includes parameter-driven polar arrays
+about arbitrary 3D axes, with full/partial clockwise or counterclockwise sweeps
+and optional nonrotating copies. `BLOOKUPMATCH` selects the unique lookup-table
+row matching numeric and boolean output properties; ambiguity and unmatched
+values reject atomically. Native projects retain the behavior; DXF carries
+evaluated static variants. See [polar blocks and lookup matching](docs/POLAR-BLOCKS.md).
