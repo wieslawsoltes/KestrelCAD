@@ -106,22 +106,37 @@
         ensure(doc);
         for (const b of doc.production.blocks) for (const e of b.entities) owners.set(e, doc);
     }
-    function expand(doc, insert, stack = [], budget = { n: 0 }) {
+    function expand(doc, insert, stack = [], budget = { n: 0 }, display = false) {
         const p = ensure(doc), b = p.blocks.find(b => b.id === insert.block);
         if (!b) throw Error('Missing block definition: ' + insert.block);
+        if (display && !doc.visible(insert)) return [];
         if (stack.includes(b.id) || stack.length >= 16) throw Error('Cyclic block.');
         if (p.references.some(r => r.block === b.id && !r.loaded)) return [];
         const out = [];
-        const source = K.DynamicBlocks && b.dynamic ? K.DynamicBlocks.evaluate(b, insert.parameters || {}, doc) : b.entities;
+        const source = K.DynamicBlocks && b.dynamic ? K.DynamicBlocks.evaluate(b, insert.parameters || {}, doc, insert) : b.entities;
         for (const item of source) {
             if (++budget.n > 200000) throw Error('Expanded block entity limit exceeded.');
             const e = clone(item); if (e.layer === '0') e.layer = insert.layer;
             if (e.color === 'byblock') e.color = insert.color;
-            const children = e.type === 'INSERT' ? expand(doc, e, [...stack, b.id], budget) : [e];
-            for (const child of children) out.push(G.transform(child, insert.matrix));
+            const children = e.type === 'INSERT' ? expand(doc, e, [...stack, b.id], budget, display) : [e];
+            for (const child of children) if (!display || doc.visible(child)) out.push(G.transform(child, insert.matrix));
         }
-        for (const a of b.attributes || []) if (!a.hidden) out.push(G.transform({ type: 'TEXT', position: a.position, text: insert.attributes?.[a.tag] ?? a.value, height: a.height, rotation: a.rotation || 0, layer: insert.layer, color: insert.color, attributeTag: a.tag }, insert.matrix));
+        for (const a of b.dynamic && K.DynamicBlocks ? [] : b.attributes || []) if (!a.hidden) out.push(G.transform({ type: 'TEXT', position: a.position, text: insert.attributes?.[a.tag] ?? a.value, height: a.height, rotation: a.rotation || 0, layer: insert.layer, color: insert.color, attributeTag: a.tag }, insert.matrix));
         return out;
+    }
+    const expansionCache = new WeakMap();
+    function* renderEntities(doc) {
+        let state = expansionCache.get(doc);
+        if (!state || state.revision !== doc.revision) {
+            state = {revision:doc.revision, values:new WeakMap()}; expansionCache.set(doc,state);
+        }
+        for (const entity of doc.entities) {
+            if (!doc.visible(entity)) continue;
+            if (entity.type !== 'INSERT') { yield {e:entity, owner:entity.id}; continue; }
+            let children = state.values.get(entity);
+            if (!children) { children=expand(doc,entity,[],{n:0},true); state.values.set(entity,children); }
+            for (const child of children) { owners.set(child,doc); yield {e:child,owner:entity.id}; }
+        }
     }
     function defineBlock(doc, label, ids, base = [0, 0, 0], replace = true) {
         name(label); point(base); const p = ensure(doc);
@@ -252,7 +267,7 @@
     }
     function geometry(e, tolerance = .5) {
         const doc = owners.get(e);
-        if (e.type === 'INSERT') { if (!doc) return empty(); const out = empty(); for (const c of expand(doc, e)) { owners.set(c, doc); merge(out, G.geometry(c, tolerance)); } out.snaps.push({ point: M.point(e.matrix, [0, 0, 0]), type: 'insertion' }); return out; }
+        if (e.type === 'INSERT') { if (!doc) return empty(); const out = empty(); for (const c of expand(doc, e, [], {n:0}, true)) { owners.set(c, doc); merge(out, G.geometry(c, tolerance)); } out.snaps.push({ point: M.point(e.matrix, [0, 0, 0]), type: 'insertion' }); return out; }
         if (e.type === 'TABLE') return tableGeometry(e);
         if (e.type === 'LEADER') { const out = empty(); for (let i = 1; i < e.points.length; i++) out.segments.push([e.points[i - 1], e.points[i]]); const a = e.points[0], u = V.norm(V.sub(e.points[1], a)), side = V.cross(e.normal || [0, 0, 1], u), h = e.textHeight || 2.5; out.segments.push([a, V.add(a, V.add(V.mul(u, h), V.mul(side, h / 4)))], [a, V.add(a, V.add(V.mul(u, h), V.mul(side, -h / 4)))]); out.texts.push({ position: e.points.at(-1), text: e.text, height: h, normal: e.normal }); out.points = out.segments.flat(); return out; }
         if (e.type === 'HATCH' && e.loops) return hatchGeometry(e);
@@ -322,6 +337,6 @@
         const layout = { name: label, width: 420, height: 297, viewports: [{ x: 10, y: 10, width: 400, height: 265, center: [0,0,0], scale, locked: true, border: true, frozenLayers: [] }] }; validateLayout(layout);
         doc.transaction('Create layout', () => ensure(doc).layouts.push(layout)); return layout;
     }
-    K.Production = { defaults, ensure, bind, validate, validateEntity, CUSTOM, MM, num, point, name, frame, toWorld, toLocal, expand, defineBlock, insertBlock, explode, attach, reference, associations, dimension, hatchGeometry, flattenGeometry, stretch, breakEntity, align, validateLayout, layoutSVG, addLayout, owners };
+    K.Production = { defaults, ensure, bind, validate, validateEntity, CUSTOM, MM, num, point, name, frame, toWorld, toLocal, expand, renderEntities, defineBlock, insertBlock, explode, attach, reference, associations, dimension, hatchGeometry, flattenGeometry, stretch, breakEntity, align, validateLayout, layoutSVG, addLayout, owners };
     G.geometry = geometry; G.transform = transform; G.dimension = dimension;
 })(typeof window !== 'undefined' ? window : globalThis);

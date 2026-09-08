@@ -109,7 +109,7 @@
         }
         function skip(type, detail) { report.skipped[type] = (report.skipped[type] || 0) + 1; if (detail && !report.warnings.includes(detail))
             report.warnings.push(detail); }
-        function common(r, inheritedLayer) { const lname = str(r, 8, '0'), c = num(r, 62, 256); return { layer: lname === '0' && inheritedLayer ? inheritedLayer : ensureLayer(lname), color: has(r, 420) ? hexColor(num(r, 420)) : c !== 256 && c !== 0 ? aciColor(c) : 'bylayer', linetype: str(r, 6, 'ByLayer'), lineweight: num(r, 370) > 0 ? num(r, 370) / 100 : undefined, sourceHandle: str(r, 5) || undefined }; }
+        function common(r, inheritedLayer) { const lname = str(r, 8, '0'), c = num(r, 62, 256); return { layer: lname === '0' && inheritedLayer ? inheritedLayer : ensureLayer(lname), color: has(r, 420) ? hexColor(num(r, 420)) : c === 0 ? 'byblock' : c !== 256 ? aciColor(c) : 'bylayer', linetype: str(r, 6, 'ByLayer'), lineweight: num(r, 370) > 0 ? num(r, 370) / 100 : undefined, sourceHandle: str(r, 5) || undefined }; }
         function emit(e, r, m, inherit) { if (!e)
             return; let out = { ...common(r, inherit), ...e }; if (m)
             out = G.transform(out, m); doc.add(out); report.created++; if (report.created > 200000)
@@ -373,7 +373,7 @@
         for (const b of [{ name: '*Model_Space', handle: modelHandle }, { name: '*Paper_Space', handle: paperHandle }, ...dimensionBlocks, ...userBlocks])
             put(0, 'BLOCK_RECORD', 5, b.handle, 100, 'AcDbSymbolTableRecord', 100, 'AcDbBlockTableRecord', 2, b.name, 70, 0, 280, 1, 281, 0);
         put(0, 'ENDTAB', 0, 'ENDSEC');
-        function base(type, e, owner = modelHandle) { put(0, type, 5, h(), 330, owner, 100, 'AcDbEntity', 8, layerName(e.layer)); if (e.color && e.color !== 'bylayer')
+        function base(type, e, owner = modelHandle) { put(0, type, 5, h(), 330, owner, 100, 'AcDbEntity', 8, layerName(e.layer)); if (e.color === 'byblock') put(62, 0); else if (e.color && e.color !== 'bylayer')
             put(420, parseInt(e.color.slice(1), 16)); if (e.lineweight)
             put(370, Math.round(e.lineweight * 100)); if (e.linetype && e.linetype !== 'ByLayer')
             put(6, /center/i.test(e.linetype) ? 'Center' : /dash/i.test(e.linetype) ? 'Dashed' : 'Continuous'); }
@@ -566,7 +566,7 @@
     const xml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
     function writeSVG(doc, options = {}) {
         const camera = options.camera, mono = options.monochrome !== false, w = options.width || 1600, h = options.height || 1000, margin = options.margin ?? 30;
-        const all = doc.entities.filter(e => doc.visible(e)), geometries = all.map(e => ({ e, g: doc.geometry(e) }));
+        const all = K.Production?.renderEntities ? [...K.Production.renderEntities(doc)] : doc.entities.filter(e=>doc.visible(e)).map(e=>({e,owner:e.id})), geometries = all.map(({e,owner},i) => ({e,svgid:owner===e.id?e.id:owner+'_'+i,g:doc.geometry(e)}));
         let pts = [];
         for (const { g } of geometries)
             for (const p of g.points)
@@ -587,9 +587,9 @@
         const scale = Math.min((w - 2 * margin) / Math.max(maxX - minX, 1), (contentHeight - 2 * margin) / Math.max(maxY - minY, 1)), tx = (w - (maxX - minX) * scale) / 2 - minX * scale, ty = (contentHeight - (maxY - minY) * scale) / 2 - minY * scale;
         const project = p => { const q = camera ? camera.project(p) : [p[0], -p[1]]; return [q[0] * scale + tx, q[1] * scale + ty]; }, fmt = p => p.map(v => Number(v.toFixed(4))).join(',');
         const svg = [`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><title>${xml(doc.name)}</title><rect width="100%" height="100%" fill="${options.background || '#ffffff'}"/>`];
-        for (const { e, g } of geometries) {
-            const layer = doc.layer(e), color = mono ? '#16212b' : K.displayColor ? K.displayColor(e.color && e.color !== 'bylayer' ? e.color : layer.color, 'light') : e.color && e.color !== 'bylayer' ? e.color : layer.color, width = Math.max(.6, (e.lineweight || layer.lineweight || .25) * 3);
-            svg.push(`<g id="${xml(e.id)}" data-layer="${xml(layer.name)}" stroke="${color}" stroke-width="${width}" fill="none" stroke-linejoin="round" stroke-linecap="round">`);
+        for (const { e, g, svgid } of geometries) {
+            const layer = doc.layer(e), color = mono ? '#16212b' : K.displayColor ? K.displayColor(e.color && !['bylayer','byblock'].includes(e.color) ? e.color : layer.color, 'light') : e.color && !['bylayer','byblock'].includes(e.color) ? e.color : layer.color, width = Math.max(.6, (e.lineweight || layer.lineweight || .25) * 3);
+            svg.push(`<g id="${xml(svgid)}" data-layer="${xml(layer.name)}" stroke="${color}" stroke-width="${width}" fill="none" stroke-linejoin="round" stroke-linecap="round">`);
             if (e.type === 'HATCH' && e.pattern === 'solid' || e.type === 'MESH' && options.shaded)
                 for (const t of g.triangles)
                     svg.push(`<polygon points="${t.points.map(p => fmt(project(p))).join(' ')}" fill="${color}" fill-opacity="0.18" stroke="none"/>`);

@@ -100,7 +100,7 @@
                 throw Error('Missing insertion point.');
             if (e.type === 'TEXT' && (typeof e.text !== 'string' || e.text.length > 100000))
                 throw Error('Invalid text entity.');
-            if (e.color && e.color !== 'bylayer' && !/^#[0-9a-f]{6}$/i.test(e.color))
+            if (e.color && e.color !== 'bylayer' && e.color !== 'byblock' && !/^#[0-9a-f]{6}$/i.test(e.color))
                 e.color = 'bylayer';
         }
         if (data.camera) {
