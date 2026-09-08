@@ -139,13 +139,13 @@
         } return g; }
         serialize(options = {}) { return { ...(options.includeSource !== false && this.sourceDocument ? { sourceDocument: this.sourceDocument } : {}), format: 'kestrel-cad', version: 2, production: K.clone(this.production || K.Production?.defaults() || null), name: this.name, units: this.units, currentLayer: this.currentLayer, layers: clone(this.layers), entities: clone(this.entities), camera: this.camera }; }
         snapshot() { return JSON.stringify(this.serialize({ includeSource: false })); }
-        apply(data, options = {}) { const { sourceDocument, ...drawingData } = data; if (sourceDocument) { if (!K.SourceDocument) throw Error('Source archive support is not loaded.'); K.SourceDocument.validate(sourceDocument); } const d = validate(clone(drawingData)); if (sourceDocument || !options.retainSource) this.sourceDocument = sourceDocument || null; delete this.constraintReport; delete this.spatialReport; this.production = d.production || K.Production?.defaults() || null; this.name = d.name || 'Untitled'; this.units = d.units; this.entities = d.entities; this.layers = d.layers; this.currentLayer = d.currentLayer || this.layers[0].id; this.camera = d.camera; this.cache = new WeakMap(); this.reindex(); }
+        apply(data, options = {}) { const { sourceDocument, ...drawingData } = data; if (sourceDocument) { if (!K.SourceDocument) throw Error('Source archive support is not loaded.'); K.SourceDocument.validate(sourceDocument); } const d = validate(clone(drawingData)); if (sourceDocument || !options.retainSource) this.sourceDocument = sourceDocument || null; delete this.constraintReport; delete this.spatialReport; this.production = d.production || K.Production?.defaults() || null; this.name = d.name || 'Untitled'; this.units = d.units; this.entities = d.entities; this.layers = d.layers; this.currentLayer = d.currentLayer || this.layers[0].id; this.camera = d.camera; this.cache = new WeakMap(); this.reindex(); K.Fields?.refresh(this); }
         transaction(label, fn) { const before = this.snapshot(); try {
             fn();
             this.reindex();
             if (K.Constraints) K.Constraints.enforce(this);
             if (K.SpatialConstraints) K.SpatialConstraints.enforce(this);
-            if (K.Production) { K.Production.associations(this); K.validateProject(this.serialize()); }
+            if (K.Production) { K.Production.associations(this); K.Fields?.refresh(this, before); K.validateProject(this.serialize()); }
             const after = this.snapshot();
             if (before === after)
                 return false;
@@ -165,19 +165,19 @@
             return null; this.redoStack.push({ label: item.label, state: this.snapshot() }); this.apply(JSON.parse(item.state), { retainSource: true }); this.changed('Undo ' + item.label); return item.label; }
         redo() { const item = this.redoStack.pop(); if (!item)
             return null; this.undoStack.push({ label: item.label, state: this.snapshot() }); this.apply(JSON.parse(item.state), { retainSource: true }); this.changed('Redo ' + item.label); return item.label; }
-        transform(ids, m, copy = false) { const result = []; for (const id of ids) {
+        transform(ids, m, copy = false) { const result = [], copied = new Map(); for (const id of ids) {
             const e = this.byId.get(id);
             if (!e || !this.editable(e))
                 continue;
             const t = K.Geo.transform(e, m);
             if (copy) {
                 t.id = uid();
-                this.add(t);
+                this.add(t); copied.set(id, t.id);
             }
             else
                 this.replace(id, t);
             result.push(t.id);
-        } this.selection = new Set(result); return result; }
+        } if (copy && K.Fields) { for (const id of result) this.replace(id, K.Fields.remap(this.byId.get(id), copied, true)); } this.selection = new Set(result); return result; }
         addLayer(name, color = '#70b8d3') { if (!name?.trim())
             throw Error('A layer name is required.'); if (this.layers.some(l => l.name.toLowerCase() === name.trim().toLowerCase()))
             throw Error('Layer names must be unique.'); const l = { id: uid('layer'), name: name.trim(), color, visible: true, locked: false, linetype: 'Continuous', lineweight: .25 }; this.layers.push(l); this.reindex(); return l; }

@@ -18,6 +18,10 @@ Local-first 2D drafting and 3D modeling in plain HTML, CSS and JavaScript. A cus
 
 `BACTION` now authors `polar-stretch` actions: coordinated reach and angle changes, frame-based vertex stretching, explicit whole-member movement and rotate-only targets. Native solids retain authoritative BREP and update only their placement. Definitions, per-instance overrides, undo/redo, clipboard and evaluated DXF stay integrated. [Geometry semantics and limitations](docs/POLAR-STRETCH.md).
 
+## Associative annotations and linked schedules
+
+`FIELD` binds TEXT/MTEXT, leaders, table cells and INSERT attributes to analytic measurements, drawing/custom properties, named parameters, aggregates and safe formulas. Source edits update their labels in the same undo step; missing references show diagnostics rather than stale quantities. `DWGPROPS`, `FIELDTABLE` and the linked `DATAEXTRACTION` output support editable metadata and fixed-selection schedules. Native save, clipboard remapping, MTEXT composition and static ASCII/binary DXF remain integrated. [Field authoring, schema and boundaries](docs/FIELDS.md).
+
 ## Run locally
 
 Python 3.10+:
