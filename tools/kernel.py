@@ -19,7 +19,8 @@ MAX_MESH = 500000
 OPERATIONS = ('box', 'cylinder', 'cone', 'sphere', 'torus', 'extrude', 'revolve',
               'loft', 'sweep', 'union', 'subtract', 'intersect', 'fillet', 'chamfer',
               'shell', 'section', 'transform', 'import', 'export', 'inspect',
-              'slice', 'separate', 'plane-surface', 'extract-faces', 'thicken', 'massprops')
+              'slice', 'separate', 'plane-surface', 'extract-faces', 'thicken', 'massprops',
+              'acis-import', 'acis-export', 'acis-dxf')
 
 
 def num(x, label='number', lo=-1e8, hi=1e8):
@@ -290,6 +291,26 @@ def execute(request):
         return shapes[0]
     def profile():
         return wire(p.get('profile'))
+    if op == 'acis-import':
+        from acis_exchange import import_geometry
+        import hashlib
+        if shapes:
+            raise ValueError('ACIS import accepts a file, not selected bodies.')
+        data = decode(p.get('data'))
+        restored, report = import_geometry(data, p.get('format'), p.get('unitMM', 1), p.get('sourceUnitMM'))
+        report['sha256'] = hashlib.sha256(data).hexdigest()
+        result = pack_many([(0, checked(s), {}) for s in restored], tolerance)
+        result['exchange'] = report
+        return result
+    if op in ('acis-export', 'acis-dxf'):
+        from acis_exchange import export_geometry, export_dxf
+        if not shapes:
+            raise ValueError('Select at least one native body for ACIS exchange.')
+        fmt = 'dxf' if op == 'acis-dxf' else p.get('format', 'sat')
+        data = export_dxf(shapes, p.get('version', 'R2018'), p.get('units', 'mm')) if op == 'acis-dxf' else export_geometry(shapes, fmt, p.get('unitMM', 1))
+        return {'format': fmt, 'data': base64.b64encode(data).decode('ascii'), 'bytes': len(data),
+                'bodies': len(shapes), 'mode': 'planar-straight-brep', 'geometryOnly': True,
+                'warnings': ['Only selected native body geometry is exported; drawing annotations, attributes and application history are not included.']}
     if op == 'massprops':
         if not shapes or any(not s.Solids() for s in shapes):
             raise ValueError('Select native closed solids for mass properties.')
@@ -413,7 +434,7 @@ def execute(request):
     elif op == 'import':
         fmt = p.get('format')
         if fmt not in ('step', 'iges', 'brep'):
-            raise ValueError('Import formats: STEP, IGES, OCCT BREP. ACIS SAT/SAB is not supported.')
+            raise ValueError('Import formats: STEP, IGES, OCCT BREP. Use the dedicated ACIS exchange commands for planar SAT/SAB geometry.')
         data = decode(p.get('data'))
         with tempfile.TemporaryDirectory(prefix='kestrel-kernel-') as tmp:
             path = Path(tmp)/('input.'+fmt)

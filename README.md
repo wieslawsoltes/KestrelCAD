@@ -134,3 +134,14 @@ geometry. Failed solves roll back atomically. Native project persistence, unit c
 and complete-selection clipboard transfer retain the graph. This is a bounded numerical
 solver, not general deformable-solid/contact or proprietary DWG constraint compatibility.
 See [spatial constraint authoring, numerical limits and tests](docs/SPATIAL-CONSTRAINTS.md).
+
+
+## Planar ACIS exchange
+
+`ACISIN`, `ACISOUT` and `SOLIDDXF` translate native planar B-reps with straight
+edges, holes and void shells using the local worker. SAT 700, SAB 21800 and actual
+ACIS-backed DXF solids are supported without manufacturing triangle solids.
+Curved/unknown geometry rejects. These commands exchange selected geometry, not
+lossless ACIS application metadata or a complete drawing. Original SAT/SAB files
+remain separate. Install the updated `requirements-kernel.txt`.
+See [commands, units, topology checks and compatibility boundaries](docs/ACIS-EXCHANGE.md).
