@@ -20,7 +20,7 @@ OPERATIONS = ('box', 'cylinder', 'cone', 'sphere', 'torus', 'extrude', 'revolve'
               'loft', 'sweep', 'union', 'subtract', 'intersect', 'fillet', 'chamfer',
               'shell', 'section', 'transform', 'import', 'export', 'inspect',
               'slice', 'separate', 'plane-surface', 'extract-faces', 'thicken', 'massprops',
-              'acis-import', 'acis-export', 'acis-dxf', 'interference')
+              'acis-import', 'acis-export', 'acis-dxf', 'interference', 'extract-curves')
 
 
 def num(x, label='number', lo=-1e8, hi=1e8):
@@ -90,6 +90,9 @@ def wire(profile, closed=True):
     if not isinstance(profile, dict):
         raise ValueError('A structured profile is required.')
     kind = profile.get('type')
+    if kind == 'spline':
+        from native_curves import spline_wire
+        return spline_wire(profile, closed)
     if kind in ('circle', 'ellipse'):
         center = vector(profile.get('center', [0, 0, 0]), 'center')
         normal = vector(profile.get('normal', [0, 0, 1]), 'normal')
@@ -311,6 +314,9 @@ def execute(request):
         return {'format': fmt, 'data': base64.b64encode(data).decode('ascii'), 'bytes': len(data),
                 'bodies': len(shapes), 'mode': 'planar-straight-brep', 'geometryOnly': True,
                 'warnings': ['Only selected native body geometry is exported; drawing annotations, attributes and application history are not included.']}
+    if op == 'extract-curves':
+        from native_curves import extract
+        return extract(shapes, p)
     if op == 'interference':
         from native_analysis import analyze
         return analyze(shapes, p, tolerance)
