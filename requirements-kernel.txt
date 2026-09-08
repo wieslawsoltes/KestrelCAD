@@ -1,2 +1,5 @@
 # Optional local B-rep engine. The browser application has no runtime JS dependency.
 cadquery==2.8.0
+
+# Pinned geometry-only SAT/SAB adapter; not an unrestricted ACIS SDK.
+ezdxf==1.4.4

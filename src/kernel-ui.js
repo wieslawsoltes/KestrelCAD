@@ -18,7 +18,7 @@
         {name:'Exchange',large:['solid-import','solid-export'],columns:[['solid-detach']]}];
     const xyz=s=>P.point(String(s).split(',').map(Number));
     const menu=(key,label,choices)=>`<div class="form-field"><label>${esc(label)}</label><select name="${key}">${choices.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join('')}</select></div>`;
-    const note='<div class="dialog-note">Real curves, surfaces and topology are retained in native projects. The viewport uses a display mesh. Operations need the optional local OpenCascade engine; this is not an ACIS SAT/SAB codec.</div>';
+    const note='<div class="dialog-note">Real curves, surfaces and topology are retained in native projects. The viewport uses a display mesh. Operations need the optional local OpenCascade engine; use the dedicated ACIS commands for planar SAT/SAB translation.</div>';
     K.installKernelUI=function(App){
         const run=App.prototype.run;
         App.prototype.run=async function(id){

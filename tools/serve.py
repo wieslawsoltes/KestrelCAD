@@ -42,6 +42,8 @@ def capabilities() -> dict:
         'dwgRead': bool(read), 'dwgWrite': bool(write),
         'brep': bool(importlib.util.find_spec('cadquery')),
         'brepProvider': 'OpenCascade via CadQuery (not ACIS)',
+        'acisPlanar': bool(importlib.util.find_spec('cadquery') and importlib.util.find_spec('ezdxf')),
+        'acisScope': 'SAT 700 / SAB 21800 planar faces and straight edges only; geometry translation, not lossless ACIS editing',
         'reason': ('Separate local converters detected; interoperability still depends on codec and DXF entity support.'
                    if read or write else 'GNU LibreDWG converters were not found on PATH. DXF and native project files work without them.'),
         'limits': {'inputBytes': MAX_BYTES, 'outputBytes': MAX_BYTES, 'timeoutSeconds': 60},
