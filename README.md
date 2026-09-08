@@ -78,7 +78,7 @@ Native `.kcad` files retain supported editable objects and production metadata, 
 
 DWG requires separately installed GNU LibreDWG `dwg2dxf` / `dxf2dwg` executables and the local server. The optional bridge is not available on GitHub Pages. Neither codec is bundled; real native DWG conversion has not been verified here. The supported DXF subset remains the fidelity bottleneck even with a codec.
 
-PNG captures the viewport. SVG supports vector output and physical layout pages. Browser fonts are approximate rather than SHX-compatible. Viewport text is a Canvas overlay, not depth-occluded 3D text.
+PNG captures the viewport. SVG supports vector output and physical layout pages. User-provided supported SHX/SHP fonts render as stroke geometry; outline fonts use browser text shaping. Missing dependencies are reported. Outline viewport text remains a Canvas overlay, not depth-occluded 3D text.
 
 ## Tests and build
 
@@ -95,3 +95,12 @@ Fresh results are written to `tests/results/`. `build-info.json` is generated af
 ## Source layout
 
 `src/math.js`, `geometry.js`, `model.js`, `csg.js`, `exchange.js`, `renderer.js` implement geometry, persistence and rendering. `production.js` adds persistent drafting objects. `ui.js`, `production-ui.js`, `app.js` implement the UI and editing workflows. `tools/serve.py` hosts the local editor and optional DWG codec. The application source is MIT licensed; optional third-party tools have separate licenses.
+
+## Text styles and user-provided fonts
+
+The Text ribbon provides STYLE, FONTLOAD, FONTREPORT and TEXTSTYLE. Load your own
+SHX/SHP stroke fonts or browser-supported outline fonts without uploading them.
+Named style definitions, typography overrides, clipboard transfer and supported
+DXF STYLE/TEXT records are preserved. SHX glyph strokes are real drawing geometry
+and self-contained SVG paths; missing fonts/glyphs are reported. Font files are not
+bundled or included in project downloads. See [font workflows and fidelity limits](docs/FONTS.md).

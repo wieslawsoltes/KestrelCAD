@@ -380,6 +380,7 @@
             c.lineJoin = 'round';
             c.lineCap = 'round';
             for (const { t, color, alpha, dimension } of this.texts) {
+                if(K.Fonts && t.fontFamily){K.Fonts.drawText(c,t,p=>this.camera.project(p),color,alpha);continue;}
                 const p = this.camera.project(t.position);
                 if (p[2] < 0 || p[2] > 1 || p[0] < -500 || p[0] > this.width + 500 || p[1] < -200 || p[1] > this.height + 200)
                     continue;
