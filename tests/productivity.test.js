@@ -50,6 +50,13 @@ test('extraction creates an editable snapshot table with undo',()=>{const d=draw
 test('layer states survive native persistence and restore without deleting layers',()=>{const d=drawing(),e=line(d),layer=d.layer(e);D.saveLayers(d,'Design');d.transaction('Layer change',()=>{layer.visible=false;layer.color='#123456';d.addLayer('New');});const restored=K.Drawing.from(d.serialize());D.restoreLayers(restored,'Design');assert(restored.layer(e).visible);assert(restored.layers.some(l=>l.name==='New'));assert.notEqual(restored.layer(e).color,'#123456');});
 test('layer state restoration and deletion are undoable',()=>{const d=drawing(),e=line(d);D.saveLayers(d,'Design');d.transaction('Hide',()=>{d.layer(e).visible=false;});D.restoreLayers(d,'Design');assert(d.layer(e).visible);d.undo();assert(!d.layer(e).visible);D.deleteLayers(d,'Design');assert.equal(D.layerStates(d).length,0);d.undo();assert.equal(D.layerStates(d).length,1);});
 test('layer state overwrite requires an explicit request',()=>{const d=drawing();D.saveLayers(d,'Design');fail(()=>D.saveLayers(d,'design'));D.saveLayers(d,'design',true);assert.equal(D.layerStates(d).length,1);});
+test('malformed saved layer states are rejected on native load',()=>{
+ const d=drawing();D.saveLayers(d,'A');const data=d.serialize();
+ for(const mutate of [s=>s.layers[0].lineweight=-2,s=>s.layers[0].color='url(bad)',s=>s.layers[0].visible='false',s=>s.layers.push(s.layers[0]),s=>s.name='__proto__']){
+  const bad=K.clone(data);mutate(bad.production.layerStates[0]);fail(()=>K.Drawing.from(bad));
+ }
+ const bad=K.clone(data);bad.production.layerStates.push(K.clone(bad.production.layerStates[0]));fail(()=>K.Drawing.from(bad));
+});
 const failed=results.filter(r=>r.status==='failed').length;
 fs.mkdirSync(path.join(root,'tests/results'),{recursive:true});
 fs.writeFileSync(path.join(root,'tests/results/productivity-results.json'),JSON.stringify({passed:results.length-failed,failed,tests:results},null,2));

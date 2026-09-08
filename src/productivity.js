@@ -256,5 +256,30 @@
         if (!layerStates(doc).some(s => s.name === name)) throw Error('Unknown layer state.');
         doc.transaction('Delete layer state', () => {P.ensure(doc).layerStates = layerStates(doc).filter(s => s.name !== name);});
     }
+    // Persisted states are untrusted project data, not just values from the dialog.
+    const validateProduction = P.validate;
+    P.validate = function(data) {
+        validateProduction(data);
+        const states = data.production.layerStates;
+        if (states == null) return;
+        if (!Array.isArray(states) || states.length > 128) throw Error('Invalid layer-state table.');
+        const names = new Set();
+        for (const state of states) {
+            if (!state || typeof state !== 'object') throw Error('Invalid layer state.');
+            P.name(state.name);
+            if (names.has(state.name.toLowerCase())) throw Error('Duplicate layer-state name.');
+            names.add(state.name.toLowerCase());
+            const id = value => typeof value === 'string' && /^[-a-zA-Z0-9_.:]{1,128}$/.test(value);
+            if (!id(state.currentLayer) || !Array.isArray(state.layers) || state.layers.length > 2048) throw Error('Invalid saved layer list.');
+            const ids = new Set();
+            for (const layer of state.layers) {
+                if (!layer || !id(layer.id) || ids.has(layer.id)) throw Error('Invalid saved layer identity.');
+                ids.add(layer.id);
+                if (typeof layer.visible !== 'boolean' || typeof layer.locked !== 'boolean' || !/^#[0-9a-f]{6}$/i.test(layer.color)) throw Error('Invalid saved layer appearance.');
+                finite(layer.lineweight, 'saved lineweight', .01, 5);
+                if (typeof layer.linetype !== 'string' || layer.linetype.length > 255 || /[\x00-\x1f]/.test(layer.linetype)) throw Error('Invalid saved linetype.');
+            }
+        }
+    };
     K.Productivity = {version: 1, curve, stations, mark, lengthen, reversed, reverse, matches, select, area, rows, csv, count, extractionTable, layerStates, saveLayers, restoreLayers, deleteLayers};
 })(typeof window !== 'undefined' ? window : globalThis);

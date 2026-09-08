@@ -96,9 +96,5 @@
         }
     }
     D.installUI = install;
-    if (typeof document !== 'undefined') {
-        let attempts = 0;
-        const timer = setInterval(() => {if (install(root.kestrel) || ++attempts > 600) clearInterval(timer);}, 16);
-        document.addEventListener('DOMContentLoaded', () => install(root.kestrel), {once:true});
-    }
+    K.installProductivityUI = App => install(App.prototype);
 })(typeof window !== 'undefined' ? window : globalThis);
