@@ -33,8 +33,8 @@
         const added=[]; for(const original of selected){let e=G.transform(remap(original),matrix);e.id=ids.get(original.id);delete e.sourceHandle;delete e.group;
             if(e.anchors){if(e.anchors.every(a=>ids.has(a.entity)))e.anchors=e.anchors.map(a=>({...a,entity:ids.get(a.entity)}));else delete e.anchors;}
             if(e.boundaryIds){if(e.boundaryIds.every(id=>ids.has(id)))e.boundaryIds=e.boundaryIds.map(id=>ids.get(id));else delete e.boundaryIds;}
-            added.push(doc.add(e).id);
-        }doc.reindex();doc.operationWarnings=[...(K.Constraints?.copyInto(doc,data,ids,matrix)||[]),...(K.SpatialConstraints?.copyInto(doc,data,ids,matrix)||[])];return added;
+            if(K.Fields)e=K.Fields.remap(e,ids);added.push(doc.add(e).id);
+        }doc.reindex();K.Fields?.finishCopy(doc,ids);doc.operationWarnings=[...(K.Constraints?.copyInto(doc,data,ids,matrix)||[]),...(K.SpatialConstraints?.copyInto(doc,data,ids,matrix)||[])];if(K.Fields&&selected.reduce((n,e)=>n+(e.fieldBindings?.length||0),0)>added.reduce((n,id)=>n+(doc.byId.get(id).fieldBindings?.length||0),0))doc.operationWarnings.push('Some annotation fields were frozen because their complete source dependencies were not copied.');return added;
     }
     P.copyInto=copyInto;
     K.installProductionUI = function(App) {

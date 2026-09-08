@@ -77,12 +77,12 @@
         if (id === 'productivity-reverse') {D.reverse(doc,selection); changed(); app.toast(selection.length+' curves reversed.'); return;}
         if (id === 'productivity-extract') {
             const records = D.rows(doc,selection.length ? selection : null), opened = doc.revision;
-            app.dialog({title:'Extract drawing data', html:'<p>'+records.length+' objects. CSV uses spreadsheet-safe text cells. JSON retains exact scalar values. Tables are editable snapshots; they are not an associative external data link.</p>' + menu('format','Output',[['csv','CSV file'],['json','JSON file'],['table','Editable drawing table']]) + field('position','Table insertion XYZ (current UCS)','0,0,0'), onSubmit:f=>{
+            app.dialog({title:'Extract drawing data', html:'<p>'+records.length+' objects. CSV uses spreadsheet-safe text cells. JSON retains exact scalar values. Ordinary tables are editable snapshots. Linked tables keep a fixed set of source objects and update their native field cells; neither option is an external data link.</p>' + menu('format','Output',[['csv','CSV file'],['json','JSON file'],['table','Editable snapshot table'],['linked','Linked field table']]) + field('position','Table insertion XYZ (current UCS)','0,0,0'), onSubmit:f=>{
                 if (f.format === 'csv') app.download(D.csv(records),app.filename('csv'));
                 else if (f.format === 'json') app.download(JSON.stringify({drawing:doc.name,units:doc.units,records},null,2),app.filename('quantities.json'));
                 else {
                     if (doc.revision !== opened) throw Error('Drawing changed; reopen Data extraction.');
-                    D.extractionTable(doc,selection.length ? selection : null,K.Production.toWorld(doc,xyz(f.position))); changed();
+                    if(f.format==='linked'){if(!K.Fields)throw Error('Annotation fields are not loaded.');K.Fields.linkedTable(doc,records.map(r=>r.id),K.Production.toWorld(doc,xyz(f.position)),{columns:[{label:'Type',property:'type'},{label:'Layer',property:'layer'},{label:'Length',property:'length'},{label:'Area',property:'area'}]});}else D.extractionTable(doc,selection.length ? selection : null,K.Production.toWorld(doc,xyz(f.position))); changed();
                 }
             }}); return;
         }

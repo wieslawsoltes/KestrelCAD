@@ -12,7 +12,7 @@ The Productivity ribbon adds working selection, curve-station, quantity and laye
 | MEASURE | Place markers at fixed arc-length intervals. An exact open endpoint is included; the closing seam is not duplicated. |
 | LENGTHEN | Change the total length, add/subtract a length increment, or apply a percentage to a line or circular arc, from either endpoint. The opposite endpoint stays fixed. |
 | REVERSE | Reverse line/polyline/spline/conic traversal while retaining the geometric locus, rational weights and bulge orientation. |
-| DATAEXTRACTION | Download CSV or JSON, or create an editable drawing TABLE containing type, layer, block, length and area. CSV includes individual attribute columns and protects textual cells against spreadsheet formula injection. |
+| DATAEXTRACTION | Download CSV or JSON, or create an editable drawing TABLE containing type, layer, block, length and area. CSV includes individual attribute columns and protects textual cells against spreadsheet formula injection. A separate linked-table output uses [native annotation fields](FIELDS.md) for fixed-source measurements. |
 | LAYERSTATESAVE | Save visibility, locks, color, linetype, lineweight and current layer. Overwriting a state requires an explicit choice. |
 | LAYERSTATERESTORE | Restore or delete a saved state. Restoring leaves new layers intact and does not recreate deleted layers. |
 
@@ -26,7 +26,7 @@ Layer states and extraction tables persist in native projects. Undo restores pri
 
 ## Quantity scope
 
-Quantities operate on top-level objects. A block reference counts as one instance, not a recursive count of every member. Circle and supported closed-polyline areas include analytical bulge contributions; self-crossing boundaries have algebraic areas rather than Boolean-union areas. Unsupported quantities are empty, not fabricated zero-valued measurements. Extraction tables are snapshots and do not claim associative external spreadsheet/data-link support. JSON preserves exact scalar values; displayed table quantities use ten significant digits.
+Quantities operate on top-level objects. A block reference counts as one instance, not a recursive count of every member. Circle and supported closed-polyline areas include analytical bulge contributions; self-crossing boundaries have algebraic areas rather than Boolean-union areas. Unsupported quantities are empty, not fabricated zero-valued measurements. Ordinary extraction tables remain editable snapshots. The linked-field-table option updates a fixed set of source identities and shows missing or incompatible cells as ####; it is not an associative external spreadsheet/data link. JSON preserves exact scalar values; displayed table quantities use ten significant digits.
 
 ## Interchange
 
