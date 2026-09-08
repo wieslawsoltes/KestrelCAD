@@ -49,6 +49,12 @@ The **Parametric** ribbon adds named expressions and maintained planar geometric
 
 This is a bounded **planar nonlinear solver**, not a 3D assembly or general NURBS constraint engine. One saved plane per drawing; lines, straight polylines, points, circles and arcs; 160 free scalar variables and 256 constraint records. Numerical rank is local, not a global proof. Parameter length units remain explicit during physical unit conversion. Equations persist in `.kcad`; ordinary DXF exchange contains evaluated geometry, not the native constraint graph. See [sketch constraints](docs/PARAMETRIC.md).
 
+## Configurable blocks
+
+The **Blocks** ribbon adds independent typed instance parameters, safe derived expressions, lookup tables, visibility states, flip, move/stretch/rotate/scale and rectangular-array actions. `DYNAMICDEMO` opens two configurable fabrication plates; select one and use the inspector or `BPROPERTIES`. `BRESET` restores defaults, `BDEFINE` edits the shared behavior and `BACTION` adds an action. Changes participate in undo, native persistence and definition-aware clipboard transfer.
+
+Block members now render using their own layer/color/line properties, with nested layer visibility and ByBlock inheritance. DXF exports the evaluated appearance as static standard block variants, **not** proprietary AutoCAD dynamic-block actions. Advanced behavior authoring uses validated JSON; no custom graphical parameter grips are implemented. See [configurable block workflows and limits](docs/DYNAMIC-BLOCKS.md).
+
 ## Native B-rep modeling
 
 The **Solids** ribbon adds an optional local **OpenCascade** kernel through CadQuery. It is not ACIS and does not read/write SAT or SAB. Install the pinned optional engine in a Python 3.11+ environment:

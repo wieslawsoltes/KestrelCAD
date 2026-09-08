@@ -147,12 +147,12 @@
             this.fallbackTriangles = [];
             const addLine = (s, color, width, dash) => { lines.push(...V.sub(s[0], this.origin), ...V.sub(s[1], this.origin), ...color, width, dash); this.fallbackLines.push({ s, color, width, dash }); };
             let triCount = 0, entityCount = 0;
-            for (const e of doc.entities) {
+            for (const {e, owner} of (K.Production?.renderEntities ? K.Production.renderEntities(doc) : doc.entities.map(e=>({e,owner:e.id})))) {
                 if (!doc.visible(e))
                     continue;
                 entityCount++;
-                const g = doc.geometry(e), layer = doc.layer(e), selected = doc.selection.has(e.id), locked = layer.locked;
-                const raw = e.color && e.color !== 'bylayer' ? e.color : layer.color, col = displayColor(raw, this.theme);
+                const g = doc.geometry(e), layer = doc.layer(e), selected = doc.selection.has(owner), locked = layer.locked;
+                const raw = e.color && !['bylayer','byblock'].includes(e.color) ? e.color : layer.color, col = displayColor(raw, this.theme);
                 let color = rgba(selected ? '#63d7eb' : col, locked ? .42 : 1);
                 const isMesh = e.type === 'MESH', linetype = e.linetype === 'ByLayer' || !e.linetype ? layer.linetype : e.linetype, dash = /center/i.test(linetype) ? 2 : /dash/i.test(linetype) ? 1 : 0, width = selected ? 2.1 : this.lineweights ? Math.max(.8, (e.lineweight || layer.lineweight || .25) * 4) : isMesh ? .75 : 1.05;
                 if (!(isMesh && this.style === 'shaded')) {
