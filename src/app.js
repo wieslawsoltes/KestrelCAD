@@ -2385,7 +2385,7 @@
     K.installAdvancedUI?.(App);
     K.installKernelUI?.(App); K.installConstraintsUI?.(App); K.installDynamicUI?.(App);
     K.installFontsUI?.(App); K.installSourceUI?.(App); K.installProductivityUI?.(App); K.installMTextUI?.(App); K.installSpatialUI?.(App); K.installAcisUI?.(App); K.installNativeAnalysisUI?.(App);
-    K.installNativeCurvesUI?.(App); K.installFieldsUI?.(App);
+    K.installNativeCurvesUI?.(App); K.installFieldsUI?.(App); K.installTextSearchUI?.(App);
     const app = new App();
     app.init().catch(error => { console.error(error); document.documentElement.dataset.ready = 'error'; const log = $('command-history'); if (log) {
         const row = document.createElement('div');
