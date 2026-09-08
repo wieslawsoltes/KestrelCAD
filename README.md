@@ -6,6 +6,10 @@ Local-first 2D drafting and 3D modeling in plain HTML, CSS and JavaScript. A cus
 
 **Branch builds are not the live site.** Changes are proposed through PRs; GitHub Pages publishes `main` only after merge. This is an original Kestrel application, not an Autodesk product or a feature-complete AutoCAD replacement.
 
+## Native interference and clearance
+
+`INTERFERE` / `CLEARANCE` compare real native solid material in one or two sets. Reports include overlap volume, minimum gaps and closest points; retain independent BREP overlap solids or gap lines with undo, without modifying sources. Available in **Solids → Material checks** using the optional local kernel. [Usage and numerical boundaries](docs/NATIVE-ANALYSIS.md).
+
 ## Polar stretch for configurable blocks
 
 `BACTION` now authors `polar-stretch` actions: coordinated reach and angle changes, frame-based vertex stretching, explicit whole-member movement and rotate-only targets. Native solids retain authoritative BREP and update only their placement. Definitions, per-instance overrides, undo/redo, clipboard and evaluated DXF stay integrated. [Geometry semantics and limitations](docs/POLAR-STRETCH.md).
