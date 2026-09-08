@@ -69,7 +69,28 @@ try:
             snap=page.evaluate('kestrel.doc.snapshot()');action('acis-import');upload(b'not acis','bad.sab');page.locator('[name="acknowledge"]').check();page.locator('#modal-submit').click();page.wait_for_function('!document.querySelector("#modal-error").hidden');assert page.evaluate('kestrel.doc.snapshot()')==snap;page.evaluate('kestrel.closeDialog()')
         test('Malformed input leaves the complete drawing unchanged',malformed)
         def curved():
-            action('solid-cylinder');submit({'radius':4,'height':10});snapshot=page.evaluate('kestrel.doc.snapshot()');action('acis-export');page.locator('[name="acknowledge"]').check();page.locator('#modal-submit').click();page.wait_for_function('!document.querySelector("#modal-error").hidden');assert 'curved' in page.locator('#modal-error').inner_text().lower();assert page.evaluate('kestrel.doc.snapshot()')==snapshot;page.evaluate('kestrel.closeDialog()');action('undo')
+            action('solid-cylinder');submit({'radius':4,'height':10})
+            # Creation fits the live view; its debounced autosave has not necessarily
+            # copied that view into Drawing.camera yet. Flush the pending view before
+            # taking a full snapshot so a later legitimate autosave cannot masquerade
+            # as a failed-export mutation. Geometry/history assertions stay exact.
+            page.evaluate('kestrel.autosave()')
+            snapshot=page.evaluate('kestrel.doc.snapshot()')
+            history=page.evaluate('JSON.stringify([kestrel.doc.undoStack,kestrel.doc.redoStack])')
+            try:
+                action('acis-export');page.locator('[name="acknowledge"]').check()
+                page.locator('#modal-submit').click()
+                page.wait_for_function('!document.querySelector("#modal-error").hidden')
+                assert 'curved' in page.locator('#modal-error').inner_text().lower()
+                # Exercise the debounced autosave even on a very fast kernel host.
+                page.wait_for_timeout(900)
+                after=page.evaluate('kestrel.doc.snapshot()')
+                before_data=json.loads(snapshot);after_data=json.loads(after)
+                assert after==snapshot, {key:[before_data.get(key),after_data.get(key)]
+                    for key in set(before_data)|set(after_data) if before_data.get(key)!=after_data.get(key)}
+                assert page.evaluate('JSON.stringify([kestrel.doc.undoStack,kestrel.doc.redoStack])')==history
+            finally:
+                page.evaluate('kestrel.closeDialog()');action('undo')
         test('Curved-body export rejects instead of silently tessellating',curved)
         def stale():
             action('acis-import');upload(sat,'bodies.sat');page.evaluate('kestrel.doc.transaction("Other edit",()=>kestrel.doc.add("POINT",{position:[99,99,99]}))');page.locator('[name="acknowledge"]').check();page.locator('#modal-submit').click();page.wait_for_function('!document.querySelector("#modal-error").hidden');assert 'changed' in page.locator('#modal-error').inner_text().lower();assert page.evaluate('kestrel.doc.entities.length')==3;page.evaluate('kestrel.closeDialog()');action('undo')
