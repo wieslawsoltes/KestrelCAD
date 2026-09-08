@@ -6,11 +6,12 @@ const commands=[
  ['dynamic-properties','Block parameters','BPROPERTIES · DYNBLOCK','properties'],
  ['dynamic-definition','Dynamic definition','BDEFINE · BEDITDYNAMIC','drawing'],
  ['dynamic-action','Add block action','BACTION','move'],
+ ['dynamic-lookup','Match lookup properties','BLOOKUPMATCH','properties'],
  ['dynamic-reset','Reset block parameters','BRESET','undo'],
  ['dynamic-demo','Configurable plate','DYNAMICDEMO','rectangle']
 ];
 for(const[id,label,alias,icon]of commands)U.commands.push({id,label,alias,icon,description:label+' — native configurable blocks'});
-U.groups.Blocks=[{name:'Reusable content',large:['block-create','block-insert'],columns:[['block-edit','block-save','attributes']]},{name:'Dynamic behavior',large:['dynamic-properties','dynamic-definition'],columns:[['dynamic-action','dynamic-reset']]},{name:'Example',large:['dynamic-demo']}];
+U.groups.Blocks=[{name:'Reusable content',large:['block-create','block-insert'],columns:[['block-edit','block-save','attributes']]},{name:'Dynamic behavior',large:['dynamic-properties','dynamic-definition'],columns:[['dynamic-action','dynamic-reset','dynamic-lookup']]},{name:'Example',large:['dynamic-demo']}];
 const select=(key,label,rows,value)=>`<div class="form-field"><label>${esc(label)}</label><select name="${key}">${rows.map(([v,t])=>`<option value="${esc(v)}"${String(v)===String(value)?' selected':''}>${esc(t)}</option>`).join('')}</select></div>`;
 const json=(key,value,label)=>`<div class="form-field full"><label>${esc(label)}</label><textarea name="${key}" rows="16" spellcheck="false" style="font-family:monospace">${esc(JSON.stringify(value,null,2))}</textarea></div>`;
 function starter(b){
@@ -79,9 +80,33 @@ K.installDynamicUI=function(App){
    if(id==='dynamic-properties'){
     this.dialog({title:'Block parameters — '+b.name,wide:true,html:'<p>These values affect only the selected instance. Driven values come from expressions or lookup tables.</p><div class="form-grid">'+fields(app,b,e)+'</div>',onSubmit:f=>{guard();const state=D.resolve(b,e.parameters||{}),values={};for(const p of b.dynamic.parameters)if(!state.driven.has(p.name))values[p.name]=p.type==='boolean'?!!f['db_'+p.name]:p.type==='enum'?f['db_'+p.name]:Number(f['db_'+p.name]);D.setValues(doc,e.id,values,true);}});return;
    }
+   if(id==='dynamic-lookup') {
+    const tables=b.dynamic.lookups||[];
+    if(!tables.length) throw Error('This block has no lookup table. Add one in Dynamic definition.');
+    const state=D.resolve(b,e.parameters||{});
+    const tableFields=t=>Object.keys(t.rows[0].set).map(name=>{
+     const p=b.dynamic.parameters.find(p=>p.name===name),key='lookupOut_'+name,value=state.values[name];
+     return p.type==='boolean'?`<label class="form-check"><input name="${key}" type="checkbox"${value?' checked':''}>${esc(name)}</label>`:field(key,name,value,'number','step="any" required');
+    }).join('');
+    const tablePreview=t=>'<table class="data-table"><thead><tr><th>'+esc(t.parameter)+'</th>'+Object.keys(t.rows[0].set).map(k=>'<th>'+esc(k)+'</th>').join('')+'</tr></thead><tbody>'+t.rows.map(r=>'<tr><td>'+esc(r.value)+'</td>'+Object.keys(t.rows[0].set).map(k=>'<td>'+esc(String(r.set[k]))+'</td>').join('')+'</tr>').join('')+'</tbody></table>';
+    this.dialog({title:'Match lookup properties — '+b.name,wide:true,html:'<p>Choose the unique table row matching these output values. This updates the lookup selector and all its dependent geometry together; unmatched or ambiguous values leave the drawing unchanged.</p><div class="form-grid">'+select('lookup','Lookup table',tables.map(t=>[t.parameter,t.parameter]),tables[0].parameter)+'</div><div id="lookup-match-fields" class="form-grid">'+tableFields(tables[0])+'</div><details><summary>Available rows</summary><div id="lookup-match-rows">'+tablePreview(tables[0])+'</div></details>',onSubmit:f=>{
+     guard();const t=tables.find(t=>t.parameter===f.lookup);if(!t)throw Error('Missing lookup table.');
+     const criteria={};for(const key of Object.keys(t.rows[0].set)){
+      const p=b.dynamic.parameters.find(p=>p.name===key);
+      if(p.type!=='boolean'&&String(f['lookupOut_'+key]??'').trim()==='')throw Error('Enter '+key+'.');
+      criteria[key]=p.type==='boolean'?!!f['lookupOut_'+key]:Number(f['lookupOut_'+key]);
+     }
+     D.setLookupValues(doc,e.id,t.parameter,criteria);
+    }});
+    document.querySelector('#modal [name="lookup"]').addEventListener('change',event=>{
+     const t=tables.find(t=>t.parameter===event.target.value);if(!t)return;
+     document.getElementById('lookup-match-fields').innerHTML=tableFields(t);
+     document.getElementById('lookup-match-rows').innerHTML=tablePreview(t);
+    });return;
+   }
    if(id==='dynamic-reset'){this.dialog({title:'Reset block parameters?',html:'<p>Restore this instance’s default parameters. Its position, attributes and other instances are retained. Undo restores the values.</p>',onSubmit:()=>{guard();D.setValues(doc,e.id,{},true);}});return;}
    const targetRows=[...b.entities.map(x=>[x.id,x.type+' — '+x.id]),...(b.attributes||[]).map(a=>['attribute:'+a.tag,'Attribute '+a.tag])];
-   this.dialog({title:'Add dynamic action',wide:true,html:'<p>The action is appended to this definition and affects every instance. Translation fields are offsets from definition geometry, rotations use degrees, stretch windows use local XYZ.</p><div class="form-grid">'+select('type','Action',D.ACTION_TYPES.filter(t=>t!=='visibility').map(t=>[t,t]),'move')+field('x','Move/stretch X expression','0','text')+field('y','Move/stretch Y expression','0','text')+field('z','Move/stretch Z expression','0','text')+field('angle','Rotation angle expression','0','text')+field('factor','Scale factor expression','1','text')+field('center','Center / flip origin XYZ','0,0,0','text')+field('normal','Rotation axis / flip normal XYZ','0,0,1','text')+select('parameter','Boolean flip parameter',b.dynamic.parameters.filter(p=>p.type==='boolean').map(p=>[p.name,p.name]))+field('min','Stretch window minimum XYZ','0,0,0','text')+field('max','Stretch window maximum XYZ','100,100,0','text')+field('columns','Array columns expression','2','text')+field('rows','Array rows expression','1','text')+field('dx','Array X spacing expression','20','text')+field('dy','Array Y spacing expression','20','text')+'</div><h3>Target geometry</h3>'+targetRows.map(([target,label],i)=>`<label class="form-check"><input type="checkbox" name="target${i}" checked>${esc(label)}</label>`).join(''),onSubmit:f=>{
+   this.dialog({title:'Add dynamic action',wide:true,html:'<p>The action is appended to this definition and affects every instance. Translation fields are offsets from definition geometry, rotations use degrees, stretch windows use local XYZ.</p><div class="form-grid">'+select('type','Action',D.ACTION_TYPES.filter(t=>t!=='visibility').map(t=>[t,t]),'move')+field('x','Move/stretch X expression','0','text')+field('y','Move/stretch Y expression','0','text')+field('z','Move/stretch Z expression','0','text')+field('angle','Rotation angle expression','0','text')+field('count','Polar item-count expression','4','text')+field('fill','Polar fill-angle expression','360','text')+field('base','Polar shared base XYZ (when not rotating)','0,0,0','text')+'<label class="form-check"><input name="rotateItems" type="checkbox" checked>Rotate polar items</label>'+field('factor','Scale factor expression','1','text')+field('center','Center / flip origin XYZ','0,0,0','text')+field('normal','Rotation axis / flip normal XYZ','0,0,1','text')+select('parameter','Boolean flip parameter',b.dynamic.parameters.filter(p=>p.type==='boolean').map(p=>[p.name,p.name]))+field('min','Stretch window minimum XYZ','0,0,0','text')+field('max','Stretch window maximum XYZ','100,100,0','text')+field('columns','Array columns expression','2','text')+field('rows','Array rows expression','1','text')+field('dx','Array X spacing expression','20','text')+field('dy','Array Y spacing expression','20','text')+'</div><h3>Target geometry</h3>'+targetRows.map(([target,label],i)=>`<label class="form-check"><input type="checkbox" name="target${i}" checked>${esc(label)}</label>`).join(''),onSubmit:f=>{
     guard();const xyz=s=>P.point(String(s).split(',').map(Number));const a={type:f.type,targets:targetRows.filter((_,i)=>f['target'+i]).map(r=>r[0])};
     if(['move','stretch'].includes(a.type))Object.assign(a,{x:f.x,y:f.y,z:f.z});
     if(a.type==='stretch')Object.assign(a,{min:xyz(f.min),max:xyz(f.max)});
@@ -89,6 +114,7 @@ K.installDynamicUI=function(App){
     if(a.type==='scale')Object.assign(a,{factor:f.factor,center:xyz(f.center)});
     if(a.type==='flip')Object.assign(a,{parameter:f.parameter,origin:xyz(f.center),normal:xyz(f.normal)});
     if(a.type==='array')Object.assign(a,{columns:f.columns,rows:f.rows,dx:f.dx,dy:f.dy});
+    if(a.type==='polar-array')Object.assign(a,{count:f.count,angle:f.fill,center:xyz(f.center),axis:xyz(f.normal),rotateItems:!!f.rotateItems,...(!f.rotateItems?{base:xyz(f.base)}:{})});
     const definition=K.clone(b.dynamic);definition.actions.push(a);D.setDefinition(doc,b.id,definition);
    }});
   }catch(error){this.fail(error);}

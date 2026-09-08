@@ -6,7 +6,7 @@ The **Blocks** ribbon and `DYNAMICDEMO` expose native, browser-only configurable
 
 Run `DYNAMICDEMO` for two editable fabrication plates. Select either plate and change Width, Height, Fastener, Count, visibility or flip using the inspector or **Block parameters** (`BPROPERTIES`, `DYNBLOCK`). The second instance remains independent. The fastener lookup sets the hole radius; the derived Area field is read-only. `BRESET` resets selected references to their definition defaults. `EXPLODE` creates the current evaluated geometry and removes that instance's behavior; undo restores it.
 
-`BDEFINE` edits the selected reference's shared dynamic definition, or attaches a starter definition to a normal block. The dialog lists stable local entity and `attribute:TAG` identifiers. `BACTION` offers forms for move, stretch, rotate, scale, flip and rectangular array actions. Advanced visibility, lookup tables and parameter definitions use the validated JSON editor. `BEDIT`/`BCLOSE` still edit shared base geometry. Definition changes update all references; references with incompatible overrides cause validation failure rather than a partial update.
+`BDEFINE` edits the selected reference's shared dynamic definition, or attaches a starter definition to a normal block. The dialog lists stable local entity and `attribute:TAG` identifiers. `BACTION` offers forms for move, stretch, rotate, scale, flip, rectangular and polar array actions. Advanced visibility, lookup tables and parameter definitions use the validated JSON editor. `BEDIT`/`BCLOSE` still edit shared base geometry. Definition changes update all references; references with incompatible overrides cause validation failure rather than a partial update.
 
 ## Parameters
 
@@ -26,6 +26,7 @@ Actions execute in listed order in **definition-local coordinates**. All targets
 | scale | Uniform positive scale about a local center. |
 | flip | Reflect across a local plane when its boolean parameter is true. |
 | array | Generate positive integer rows/columns using local X/Y spacing. Downstream actions also affect the copies of their source targets. |
+| polar-array | Replicate a target group around an arbitrary 3D axis with expression count/fill angle; optionally keep orientation about a shared base. |
 | visibility | Choose a complete enum state. Objects outside the visibility action's target scope remain visible. |
 
 Example stretching the far endpoint of a line:
@@ -48,7 +49,7 @@ Visible members use their own layers, colors, line styles and mesh classificatio
 
 ## Boundaries
 
-This is a Kestrel-native ordered action system, not full AutoCAD dynamic-block compatibility. There is no dedicated graphical action-chain editor, custom drag parameter grip, polar stretch, alignment parameter, associative path array, reverse lookup or proprietary DWG action-graph evaluator. Partial curved-entity stretch is rejected. A definition is bounded to 64 parameters and 128 actions; each evaluation is bounded to 20,000 generated objects, with the existing nested-block depth and drawing limits still enforced. These are resource guards, not performance guarantees. Invalid or oversized evaluations roll back atomically.
+This is a Kestrel-native ordered action system, not full AutoCAD dynamic-block compatibility. There is no dedicated graphical action-chain editor, custom drag parameter grip, polar stretch, alignment parameter, associative path array or proprietary DWG action-graph evaluator. Partial curved-entity stretch is rejected. A definition is bounded to 64 parameters and 128 actions; each evaluation is bounded to 20,000 generated objects, with the existing nested-block depth and drawing limits still enforced. These are resource guards, not performance guarantees. Invalid or oversized evaluations roll back atomically.
 
 ## Reproducible checks
 
@@ -60,3 +61,7 @@ python3 tests/dynamic_interop.py
 ```
 
 The browser suite mixes actual ribbon, dialog, inspector, clipboard and download operations with scripted fixture selection. The complete release verification discovers these suites automatically. Hardware WebGPU execution remains a separate validation path.
+
+## Polar arrays and inverse table matching
+
+`BACTION` now authors `polar-array` actions, and `BLOOKUPMATCH` selects a uniquely matching lookup row from numeric/boolean output properties. See [exact action schema, matching semantics and test commands](POLAR-BLOCKS.md). This inverse discrete-row match is not a proprietary action-graph decoder.

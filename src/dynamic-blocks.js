@@ -4,7 +4,7 @@
     const K = root.Kestrel, P = K.Production, G = K.Geo, {V, M} = K.Math;
     const clone = K.clone, LIMIT = 20000;
     const PARAM_TYPES = ['number', 'length', 'angle', 'integer', 'boolean', 'enum'];
-    const ACTION_TYPES = ['move', 'stretch', 'rotate', 'scale', 'flip', 'array', 'visibility'];
+    const ACTION_TYPES = ['move', 'stretch', 'rotate', 'scale', 'flip', 'array', 'polar-array', 'visibility'];
     const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
     const object = (v, label) => {
         if (!v || typeof v !== 'object' || Array.isArray(v) ||
@@ -84,7 +84,7 @@
         function targets(list) {
             if (!Array.isArray(list) || !list.length || list.length > 20000 || new Set(list).size !== list.length || list.some(id=>!ids.has(id))) throw Error('Action targets must reference distinct definition entities or attribute:TAG.');
         }
-        const formula = v => { if (typeof v !== 'number' && !text(v)) throw Error('Invalid action expression.'); };
+        const formula = v => { if (typeof v === 'number') P.num(v,'Action expression',-1e9,1e9); else if (!text(v)) throw Error('Invalid action expression.'); };
         for (const a of d.actions) {
             object(a,'dynamic action'); if (!ACTION_TYPES.includes(a.type)) throw Error('Unknown dynamic action: '+a.type);
             if (a.type==='visibility') {
@@ -107,6 +107,13 @@
             if (a.type==='scale') {formula(a.factor);P.point(a.center||[0,0,0]);}
             if (a.type==='flip') {if(names.get(a.parameter)?.type!=='boolean')throw Error('Flip needs a boolean parameter.');P.point(a.origin||[0,0,0]);P.point(a.normal||[1,0,0]);if(V.len(a.normal||[1,0,0])<1e-9)throw Error('Zero reflection normal.');}
             if (a.type==='array') for (const k of ['columns','rows','dx','dy']) formula(a[k]??(k==='rows'?1:0));
+            if (a.type==='polar-array') {
+                formula(a.count); formula(a.angle??360);
+                P.point(a.center||[0,0,0]); P.point(a.axis||[0,0,1]);
+                if (V.len(a.axis||[0,0,1])<1e-9) throw Error('Zero polar array axis.');
+                if (a.rotateItems!=null && typeof a.rotateItems!=='boolean') throw Error('Rotate items must be a boolean.');
+                if (a.base!=null || a.rotateItems===false) P.point(a.base);
+            }
         }
         return {d,names,driven};
     }
@@ -128,6 +135,30 @@
         }
         for (const p of d.parameters) if(p.expression!=null)get(p.name);
         return {values,driven,expression:source=>P.num(typeof source==='number'?source:K.Expressions.evaluate(String(source??0),get),'Action result',-1e9,1e9)};
+    }
+    // Inverse matching never changes a lookup's outputs independently of its selector.
+    // Return all matches so callers can report ambiguity instead of picking row order.
+    function lookupMatches(block, parameter, criteria) {
+        const {d,names}=schema(block),table=(d.lookups||[]).find(t=>t.parameter===parameter);
+        if(!table) throw Error('Missing lookup table: '+parameter);
+        object(criteria,'lookup criteria');
+        const keys=Object.keys(criteria),columns=Object.keys(table.rows[0].set);
+        if(!keys.length || keys.some(k=>!columns.includes(k))) throw Error('Supply one or more declared lookup output properties.');
+        for(const key of keys) scalar(names.get(key),criteria[key]);
+        const equal=(a,b)=>typeof a==='number'&&typeof b==='number'
+            ? Math.abs(a-b)<=16*Number.EPSILON*Math.max(1,Math.abs(a),Math.abs(b)) : a===b;
+        return table.rows.filter(row=>keys.every(key=>equal(row.set[key],criteria[key]))).map(clone);
+    }
+    function setLookupValues(doc,id,parameter,criteria) {
+        const e=doc.byId.get(id);
+        if(!e || e.type!=='INSERT' || !doc.editable(e)) throw Error('Select an editable block instance.');
+        const b=P.ensure(doc).blocks.find(b=>b.id===e.block);
+        if(!b?.dynamic) throw Error('This block has no dynamic definition.');
+        const matches=lookupMatches(b,parameter,criteria);
+        if(!matches.length) throw Error('No lookup row matches these properties. No values were changed.');
+        if(matches.length!==1) throw Error('Ambiguous lookup: '+matches.length+' rows match. Supply additional properties.');
+        setValues(doc,id,{[parameter]:matches[0].value});
+        return matches[0].value;
     }
     function interpolate(value, values) {
         return String(value).replace(/\$\{([A-Za-z][A-Za-z0-9_]*)\}/g,(_,name)=>{
@@ -178,6 +209,25 @@
                     return r;
                 });
             }
+            if(a.type==='polar-array') {
+                const count=f(a.count),angle=f(a.angle??360),center=a.center||[0,0,0],axis=a.axis||[0,0,1];
+                if(!Number.isInteger(count)||count<1||count>LIMIT) throw Error('Polar array count requires a positive integer within the 20,000-item limit.');
+                if(Math.abs(angle)<1e-9||Math.abs(angle)>360) throw Error('Polar fill angle must be nonzero and within -360 to 360 degrees.');
+                const source=rows.filter(r=>selected.has(r.source));
+                if(rows.length+source.length*(count-1)>LIMIT) throw Error('Dynamic block expansion exceeds 20,000 entities.');
+                // A full turn omits the duplicate endpoint. A partial sweep includes it.
+                const step=angle*Math.PI/180/(Math.abs(angle)===360?count:Math.max(1,count-1)),extra=[];
+                for(let i=1;i<count;i++) {
+                    const rotation=M.around(center,M.rotation(step*i,axis));
+                    const matrix=a.rotateItems===false?M.translation(...V.sub(M.point(rotation,a.base),a.base)):rotation;
+                    for(const r of source) {
+                        const e=transform(r.e,matrix); e.id='dynp'+actionIndex+'_'+i+'_'+e.id;
+                        if(e.id.length>128) throw Error('Chained arrays exceed identifier depth.');
+                        extra.push({...r,e});
+                    }
+                }
+                rows.push(...extra);
+            }
             if(a.type==='array') {
                 const columns=f(a.columns), countRows=f(a.rows??1),dx=f(a.dx??0),dy=f(a.dy??0);
                 if(!Number.isInteger(columns)||!Number.isInteger(countRows)||columns<1||countRows<1||columns*countRows>LIMIT)throw Error('Array counts require positive integers within the 20,000-item limit.');
@@ -188,6 +238,7 @@
             }
         }
         if(rows.length>LIMIT)throw Error('Dynamic block expansion exceeds 20,000 entities.');
+        if(new Set(rows.map(r=>r.e.id)).size!==rows.length) throw Error('Dynamic array output identifiers collide with existing geometry.');
         return rows.map(r=>{if(r.e.type==='TEXT'||r.e.type==='LEADER')r.e.text=interpolate(r.e.text,values);return r.e;});
     }
     function validate(doc) {
@@ -208,7 +259,10 @@
             if(definition==null) {
                 for(const e of [...doc.entities,...doc.production.blocks.flatMap(b=>b.entities)])if(e.block===id)delete e.parameters;
                 delete b.dynamic;
-            } else b.dynamic=clone(definition);
+            } else {
+                // Validate before JSON cloning can erase Infinity/NaN or unsupported values.
+                schema({...b,dynamic:definition}); b.dynamic=clone(definition);
+            }
         });
     }
     function setValues(doc,id,values,replace=false) {
@@ -238,5 +292,5 @@
     const oldValidate=P.validate, oldWrite=K.Exchange.writeDXF;
     P.validate=function(data){oldValidate(data);validate(data);};
     K.Exchange.writeDXF=function(data){return oldWrite(exportData(data));};
-    K.DynamicBlocks={PARAM_TYPES,ACTION_TYPES,schema,resolve,evaluate,validate,setDefinition,setValues,exportData,LIMIT};
+    K.DynamicBlocks={PARAM_TYPES,ACTION_TYPES,schema,resolve,lookupMatches,setLookupValues,evaluate,validate,setDefinition,setValues,exportData,LIMIT};
 })(typeof window!=='undefined'?window:globalThis);
