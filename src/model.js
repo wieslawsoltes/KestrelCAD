@@ -16,8 +16,7 @@
         { id: 'construction', name: 'A-CENTER', color: '#c69a66', visible: true, locked: false, linetype: 'Center', lineweight: .13 }
     ];
     const TYPES = new Set(['LINE', 'POLYLINE', 'CIRCLE', 'ARC', 'ELLIPSE', 'SPLINE', 'HATCH', 'POINT', 'TEXT', 'DIMENSION', 'MESH', 'INSERT', 'TABLE', 'LEADER']);
-    function validate(data, definition = false, history = false) {
-        if (!definition && !history && data?.sourceArchiveRef) throw Error("Internal source history references are not project files.");
+    function validate(data, definition = false) {
         if (!data || typeof data !== 'object' || data.format !== 'kestrel-cad' || ![1, 2].includes(data.version))
             throw Error('This is not a supported Kestrel CAD project (version 1 or 2).');
         if (!Array.isArray(data.entities) || data.entities.length > 200000)
@@ -110,6 +109,7 @@
                 throw Error('Invalid saved camera.');
         }
         if (!definition && K.Constraints) K.Constraints.validate(data);
+        if (!definition && data.sourceDocument) { if (!K.SourceDocument) throw Error('Source archive support is not loaded.'); K.SourceDocument.validate(data.sourceDocument); }
         if (vertices > 3000000)
             throw Error('Project vertex limit exceeded (3 million).');
         if (!['mm', 'cm', 'm', 'in', 'ft', 'unitless'].includes(data.units))
@@ -117,7 +117,7 @@
         return data;
     }
     class Drawing {
-        constructor(name = 'Untitled') { this.id = uid('doc'); this.name = name; this.entities = []; this.layers = defaultLayers(); this.units = 'mm'; this.currentLayer = 'architecture'; this.selection = new Set(); this.revision = 0; this.undoStack = []; this.redoStack = []; this.dirty = false; this.camera = null; this.onChange = () => { }; this.cache = new WeakMap(); this.reindex(); }
+        constructor(name = 'Untitled') { this.id = uid('doc'); this.name = name; this.entities = []; this.layers = defaultLayers(); this.units = 'mm'; this.currentLayer = 'architecture'; this.selection = new Set(); this.revision = 0; this.undoStack = []; this.redoStack = []; this.dirty = false; this.camera = null; this.sourceDocument = null; this.onChange = () => { }; this.cache = new WeakMap(); this.reindex(); }
         reindex() { if (K.Production) K.Production.bind(this); this.byId = new Map(this.entities.map(e => [e.id, e])); this.layerMap = new Map(this.layers.map(l => [l.id, l])); if (!this.layerMap.has(this.currentLayer))
             this.currentLayer = this.layers[0].id; this.selection = new Set([...this.selection].filter(id => this.byId.has(id))); }
         layer(e) { return this.layerMap.get(typeof e === 'string' ? e : e.layer) || this.layers[0]; }
@@ -136,15 +136,15 @@
             g = K.Geo.geometry(e, .25);
             this.cache.set(e, g);
         } return g; }
-        serialize(history = false) { return { ...K.SourceArchive?.serialize(this, history), format: 'kestrel-cad', version: 2, production: K.clone(this.production || K.Production?.defaults() || null), name: this.name, units: this.units, currentLayer: this.currentLayer, layers: clone(this.layers), entities: clone(this.entities), camera: this.camera }; }
-        snapshot(history = false) { return JSON.stringify(this.serialize(history)); }
-        apply(data, history = false) { const d = validate(clone(data), false, history); K.SourceArchive?.restore(this, d, history); delete this.constraintReport; this.production = d.production || K.Production?.defaults() || null; this.name = d.name || 'Untitled'; this.units = d.units; this.entities = d.entities; this.layers = d.layers; this.currentLayer = d.currentLayer || this.layers[0].id; this.camera = d.camera; this.cache = new WeakMap(); this.reindex(); }
-        transaction(label, fn) { const before = this.snapshot(true); try {
+        serialize(options = {}) { return { ...(options.includeSource !== false && this.sourceDocument ? { sourceDocument: this.sourceDocument } : {}), format: 'kestrel-cad', version: 2, production: K.clone(this.production || K.Production?.defaults() || null), name: this.name, units: this.units, currentLayer: this.currentLayer, layers: clone(this.layers), entities: clone(this.entities), camera: this.camera }; }
+        snapshot() { return JSON.stringify(this.serialize({ includeSource: false })); }
+        apply(data, options = {}) { const { sourceDocument, ...drawingData } = data; if (sourceDocument) { if (!K.SourceDocument) throw Error('Source archive support is not loaded.'); K.SourceDocument.validate(sourceDocument); } const d = validate(clone(drawingData)); if (sourceDocument || !options.retainSource) this.sourceDocument = sourceDocument || null; delete this.constraintReport; this.production = d.production || K.Production?.defaults() || null; this.name = d.name || 'Untitled'; this.units = d.units; this.entities = d.entities; this.layers = d.layers; this.currentLayer = d.currentLayer || this.layers[0].id; this.camera = d.camera; this.cache = new WeakMap(); this.reindex(); }
+        transaction(label, fn) { const before = this.snapshot(); try {
             fn();
             this.reindex();
             if (K.Constraints) K.Constraints.enforce(this);
-            if (K.Production) { K.Production.associations(this); K.validateProject(this.serialize(true), false, true); }
-            const after = this.snapshot(true);
+            if (K.Production) { K.Production.associations(this); K.validateProject(this.serialize()); }
+            const after = this.snapshot();
             if (before === after)
                 return false;
             this.undoStack.push({ label, state: before });
@@ -155,14 +155,14 @@
             return true;
         }
         catch (error) {
-            this.apply(JSON.parse(before), true);
+            this.apply(JSON.parse(before), { retainSource: true });
             throw error;
         } }
         changed(label = 'Edit') { this.cache = new WeakMap(); this.revision++; this.dirty = true; this.onChange(label); }
         undo() { const item = this.undoStack.pop(); if (!item)
-            return null; this.redoStack.push({ label: item.label, state: this.snapshot(true) }); this.apply(JSON.parse(item.state), true); this.changed('Undo ' + item.label); return item.label; }
+            return null; this.redoStack.push({ label: item.label, state: this.snapshot() }); this.apply(JSON.parse(item.state), { retainSource: true }); this.changed('Undo ' + item.label); return item.label; }
         redo() { const item = this.redoStack.pop(); if (!item)
-            return null; this.undoStack.push({ label: item.label, state: this.snapshot(true) }); this.apply(JSON.parse(item.state), true); this.changed('Redo ' + item.label); return item.label; }
+            return null; this.undoStack.push({ label: item.label, state: this.snapshot() }); this.apply(JSON.parse(item.state), { retainSource: true }); this.changed('Redo ' + item.label); return item.label; }
         transform(ids, m, copy = false) { const result = []; for (const id of ids) {
             const e = this.byId.get(id);
             if (!e || !this.editable(e))
