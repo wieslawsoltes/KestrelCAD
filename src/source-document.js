@@ -269,7 +269,7 @@
         if (before.color !== after.color) {
             if (after.color && after.color !== 'bylayer' && !/^#[0-9a-f]{6}$/i.test(after.color)) fail('Unsupported source color.');
             if (Number(source.version.slice(2)) < 1018 && after.color && after.color !== 'bylayer') fail('True color needs a DXF R2004-or-later source.');
-            change(changes, entitySlot, [62, 420], after.color && after.color !== 'bylayer' ? [[420, parseInt(after.color.slice(1), 16)]] : []);
+            change(changes, entitySlot, [62, 420, 430], after.color && after.color !== 'bylayer' ? [[420, parseInt(after.color.slice(1), 16)]] : []);
         }
         if (before.linetype !== after.linetype) {
             const type = after.linetype || 'ByLayer';
@@ -292,6 +292,7 @@
             const target = slots(produced[0]), codes = new Set(geometryCodes[record.type]);
             // Preserve the polyline-generation bit and unrelated SPLINE flags.
             if (record.type === 'LWPOLYLINE') for (const g of target.groups) if (g.code === 70) g.value = String((Number(get(record, 70, '0')) & ~1) | (Number(g.value) & 1));
+            if (record.type === 'TEXT') for (const g of target.groups) if (g.code === 71) g.value = String((Number(get(record, 71, '0')) & ~6) | (Number(g.value) & 6));
             if (record.type === 'SPLINE') for (const g of target.groups) if (g.code === 70) g.value = String((Number(get(record, 70, '0')) & ~5) | (Number(g.value) & 5));
             const originalSlots = slots(record).groups.filter(g => codes.has(g.code) && !g.protected);
             for (const g of originalSlots) change(changes, g.slot, [g.code], []);
