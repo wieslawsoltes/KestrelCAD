@@ -90,6 +90,39 @@ for name,call in [
     ('duplicate face indices',lambda:run('extract-faces',{'faces':[0,0]},[box])),
     ('noncoplanar profile',lambda:run('plane-surface',{'profile':{'type':'polyline','points':[[0,0,0],[5,0,0],[5,5,2],[0,5,0]]}})),
 ]:test('reject '+name,lambda fn=call:reject(fn))
+# Reproduce the client protocol, not only direct kernel-to-kernel objects.
+# Kernel.body() stores an explicit identity matrix after every operation.
+for label, matrix, expected_area in [
+    ('identity', [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1], 100*math.pi),
+    ('translation', [1,0,0,0, 0,1,0,0, 0,0,1,0, 7,9,11,1], 100*math.pi),
+    ('rotation', [1,0,0,0, 0,0,1,0, 0,-1,0,0, 2,3,4,1], 100*math.pi),
+    ('uniform scale', [2,0,0,0, 0,2,0,0, 0,0,2,0, 2,3,4,1], 400*math.pi),
+    ('reflection', [-1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1], 100*math.pi),
+]:
+    def client_roundtrip(m=matrix, area=expected_area):
+        item=json.loads(json.dumps(dict(surface, transform=m)))
+        shape=K.read_shape(item)
+        assert shape.Faces()[0].geomType()=='PLANE'
+        assert shape.Edges()[0].geomType()=='CIRCLE'
+        near(shape.Area(),area)
+        body=run('thicken',{'thickness':3},[item])
+        near(body['volume'],area*3)
+        assert body['solidCount']==1
+    test('client serialized '+label+' preserves analytic face and thickening',client_roundtrip)
+def browser_curved():
+    cylinder=run('cylinder',{'radius':10,'height':20})
+    cylinder['transform']=[1,0,0,0,0,1,0,0,0,0,1,0,5,6,7,1]
+    inspected=run('inspect',inputs=[cylinder])
+    index=next(f['index'] for f in inspected['faces'] if f['type']=='CYLINDER')
+    face=run('extract-faces',{'faces':[index]},[cylinder])['bodies'][0]
+    face['transform']=[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]
+    near(run('thicken',{'thickness':2},[face])['volume'],math.pi*(12**2-10**2)*20)
+test('client curved face survives inspect, extraction and second request',browser_curved)
+def skew_preserved():
+    item=dict(box,transform=[1,0,0,0,0.5,1,0,0,0,0,1,0,0,0,0,1])
+    result=run('massprops',inputs=[item])
+    near(result['volume'],6000);near(result['centroid'][0],17.5)
+test('genuine skew is not silently replaced by a rigid transformation',skew_preserved)
 failed=sum(r['status']=='failed' for r in results)
 (ROOT/'tests/results').mkdir(exist_ok=True)
 (ROOT/'tests/results/native-edit-results.json').write_text(json.dumps({'passed':len(results)-failed,'failed':failed,'tests':results},indent=2))

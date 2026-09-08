@@ -52,8 +52,8 @@ def decode(text):
 
 def affine(shape, values):
     """Apply a column-major affine matrix to authoritative B-rep geometry."""
-    from OCP.gp import gp_GTrsf, gp_Mat, gp_XYZ
-    from OCP.BRepBuilderAPI import BRepBuilderAPI_GTransform
+    from OCP.gp import gp_GTrsf, gp_Mat, gp_XYZ, gp_Trsf
+    from OCP.BRepBuilderAPI import BRepBuilderAPI_GTransform, BRepBuilderAPI_Transform
     import cadquery as cq
     if values is None:
         return shape
@@ -65,6 +65,20 @@ def affine(shape, values):
     mat = gp_Mat(m[0], m[4], m[8], m[1], m[5], m[9], m[2], m[6], m[10])
     if abs(mat.Determinant()) < 1e-18:
         raise ValueError('Transform is singular.')
+    # GTransform converts even an identity-transformed circle/plane to B-splines.
+    # That destroys canonical topology and can make Face.thicken() fail after a
+    # normal browser round trip (which always supplies a transform matrix).
+    # Use gp_Trsf for similarities; retain GTransform for actual skew/stretch.
+    columns = [m[0:3], m[4:7], m[8:11]]
+    gram = [[sum(a*b for a, b in zip(u, v)) for v in columns] for u in columns]
+    scale2 = sum(gram[i][i] for i in range(3)) / 3
+    similarity = all(abs(gram[i][j] - (scale2 if i == j else 0)) <= scale2*1e-12
+                     for i in range(3) for j in range(3))
+    if similarity:
+        transform = gp_Trsf()
+        transform.SetValues(m[0], m[4], m[8], m[12], m[1], m[5], m[9], m[13],
+                            m[2], m[6], m[10], m[14])
+        return cq.Shape.cast(BRepBuilderAPI_Transform(shape.wrapped, transform, True).Shape())
     transform = gp_GTrsf(mat, gp_XYZ(m[12], m[13], m[14]))
     return cq.Shape.cast(BRepBuilderAPI_GTransform(shape.wrapped, transform, True).Shape())
 
