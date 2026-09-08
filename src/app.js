@@ -218,7 +218,7 @@
                 return; if (this.tool && ['polyline', 'spline'].includes(this.tool.id)) {
                 this.finishTool();
                 return;
-            } const p = this.eventPoint(e), hit = this.hit(p); if (hit?.e.type === 'TEXT') {
+            } const p = this.eventPoint(e), hit = this.hit(p); if (['TEXT','MTEXT'].includes(hit?.e.type)) {
                 this.doc.selection = new Set([hit.e.id]);
                 this.refresh();
                 this.textDialog(hit.e);
@@ -551,6 +551,13 @@
                         html += input('Spacing', 'spacing', one.spacing || 10, 'number', 'min="0.001"');
                         html += row('Pattern', `<select data-prop="pattern">${['ANSI31', 'cross', 'solid'].map(v => `<option ${one.pattern === v ? 'selected' : ''}>${v}</option>`).join('')}</select>`);
                     }
+                }
+                else if (one.type === 'MTEXT') {
+                    pos('Position', 'position', one.position);
+                    html += input('Text height', 'height', one.height, 'number', 'min="0.0001"');
+                    html += input('Paragraph width', 'width', one.width || 0, 'number', 'min="0"');
+                    html += read('Paragraphs', K.MText.parse(one.text).paragraphs.length);
+                    html += row('Composition', '<button class="button" data-action="mtext-edit">Edit rich text</button>');
                 }
                 else if (one.type === 'TEXT') {
                     pos('Position', 'position', one.position);
@@ -1268,6 +1275,7 @@
                 }
                 if (item.g.texts.length) {
                     for (const text of item.g.texts) {
+                        if(text.composition){const quads=text.composition.quads.map(q=>q.map(v=>this.camera.project(v)));if(quads.some(q=>inside(p,q))){d=2;depth=this.camera.project(text.position)[2];}continue;}
                         const axes = G.textAxes(text), height = text.height || 10, lines = (text.text || '').split('\n'), w = Math.max(height, lines.reduce((n, l) => Math.max(n, l.length), 0) * height * .66), left = text.align === 'center' ? -w / 2 : text.align === 'right' ? -w : 0, bottom = -height * .25 - (lines.length - 1) * height * 1.35, top = height * .9, quad = [[left, bottom], [left + w, bottom], [left + w, top], [left, top]].map(([x, y]) => this.camera.project(V.add(text.position, V.add(V.mul(axes.x, x), V.mul(axes.y, y)))));
                         if (inside(p, quad) || quad.some((q, i) => segmentDistance(p, q, quad[(i + 1) % 4]).d < 4)) {
                             d = 2;
@@ -1935,6 +1943,7 @@
                 c.moveTo(a[0], a[1]);
                 c.lineTo(b[0], b[1]);
             } c.stroke(); c.setLineDash([]); for (const text of g.texts) {
+                if(text.composition){K.MText.draw(c,text,project,color,alpha,theme,true);continue;}
                 const p = project(text.position), size = clamp((text.height || 10) * cam.zoom, 7, 200);
                 c.font = `${size}px "Segoe UI",sans-serif`;
                 c.fillStyle = color;
@@ -2372,7 +2381,7 @@
     K.installProductionUI?.(App);
     K.installAdvancedUI?.(App);
     K.installKernelUI?.(App); K.installConstraintsUI?.(App); K.installDynamicUI?.(App);
-    K.installFontsUI?.(App); K.installSourceUI?.(App); K.installProductivityUI?.(App);
+    K.installFontsUI?.(App); K.installSourceUI?.(App); K.installProductivityUI?.(App); K.installMTextUI?.(App);
     const app = new App();
     app.init().catch(error => { console.error(error); document.documentElement.dataset.ready = 'error'; const log = $('command-history'); if (log) {
         const row = document.createElement('div');

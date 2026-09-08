@@ -172,7 +172,7 @@
                     }
                 }
                 for (const t of g.texts)
-                    this.texts.push({ t, color: selected ? '#63d7eb' : col, alpha: locked ? .4 : 1, dimension: e.type === 'DIMENSION' });
+                    this.texts.push({ t, color: selected ? '#63d7eb' : col, alpha: locked ? .4 : 1, dimension: e.type === 'DIMENSION', selected });
             }
             this.stats.segments = lines.length / 12;
             this.stats.triangles = triCount;
@@ -379,7 +379,8 @@
             c.clearRect(0, 0, this.width, this.height);
             c.lineJoin = 'round';
             c.lineCap = 'round';
-            for (const { t, color, alpha, dimension } of this.texts) {
+            for (const { t, color, alpha, dimension, selected } of this.texts) {
+                if(t.composition && K.MText){K.MText.draw(c,t,p=>this.camera.project(p),color,alpha,this.theme,selected);continue;}
                 if(K.Fonts && t.fontFamily){K.Fonts.drawText(c,t,p=>this.camera.project(p),color,alpha);continue;}
                 const p = this.camera.project(t.position);
                 if (p[2] < 0 || p[2] > 1 || p[0] < -500 || p[0] > this.width + 500 || p[1] < -200 || p[1] > this.height + 200)

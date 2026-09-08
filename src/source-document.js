@@ -247,11 +247,12 @@
         ELLIPSE: [10, 20, 30, 11, 21, 31, 40, 41, 42, 210, 220, 230],
         LWPOLYLINE: [90, 70, 38, 10, 20, 42, 210, 220, 230],
         SPLINE: [70, 71, 72, 73, 74, 40, 41, 10, 20, 30],
+        MTEXT: [10,20,30,11,21,31,40,41,50,71,72,73,44,1,3,7,210,220,230,90,45,63,420,421],
         TEXT: [10, 20, 30, 11, 21, 31, 40, 1, 50, 41, 51, 7, 71, 72, 73, 210, 220, 230]
     };
     const nativeFields = new Set(['points', 'position', 'center', 'normal', 'direction', 'axisX', 'axisY', 'radius', 'rx', 'ry',
         'startAngle', 'endAngle', 'closed', 'bulges', 'controlPoints', 'degree', 'knots', 'weights', 'text', 'height', 'rotation',
-        'align', 'textStyle', 'widthFactor', 'oblique', 'backwards', 'upsideDown', 'font', 'lineSpacing', 'vertical']);
+        'align', 'textStyle', 'widthFactor', 'oblique', 'backwards', 'upsideDown', 'font', 'lineSpacing', 'vertical','width','attachment','spacingFactor','spacingStyle','background','textAxisX','textAxisY','textDirection','drawingDirection','columns']);
     const commonFields = new Set(['layer', 'color', 'linetype', 'lineweight', 'hidden']);
     function generated(data, entities) {
         const d = new K.Drawing('Source edit'); d.units = data.units; d.layers = K.clone(data.layers); d.entities = K.clone(entities);
@@ -282,6 +283,7 @@
         }
         if (!!before.hidden !== !!after.hidden) change(changes, entitySlot, [60], after.hidden ? [[60, 1]] : []);
         if (geometryChanged) {
+            if(record.type==='MTEXT' && (record.groups.some(g=>[75,76,78,79,48,49,101].includes(g.code)&&!g.protected) || after.text.includes('%<') || before.text.includes('%<')))fail('Linked columns, embedded MTEXT objects and fields cannot be source-patched safely.');
             if (Number(get(record, 39, '0')) !== 0) fail('Editing extruded 2D entities with source thickness is not supported.');
             if (record.type === 'LWPOLYLINE' && record.groups.some(g => !g.protected && [40, 41, 43, 91].includes(g.code) && Number(g.value) !== 0))
                 fail('Per-vertex widths/identifiers or constant-width polylines require a dedicated width-aware editor.');
@@ -294,9 +296,9 @@
             if (record.type === 'LWPOLYLINE') for (const g of target.groups) if (g.code === 70) g.value = String((Number(get(record, 70, '0')) & ~1) | (Number(g.value) & 1));
             if (record.type === 'TEXT') for (const g of target.groups) if (g.code === 71) g.value = String((Number(get(record, 71, '0')) & ~6) | (Number(g.value) & 6));
             if (record.type === 'SPLINE') for (const g of target.groups) if (g.code === 70) g.value = String((Number(get(record, 70, '0')) & ~5) | (Number(g.value) & 5));
-            const originalSlots = slots(record).groups.filter(g => codes.has(g.code) && !g.protected);
+            const originalSlots = slots(record).groups.filter(g => codes.has(g.code) && !g.protected && (record.type !== 'MTEXT' || g.slot !== entitySlot));
             for (const g of originalSlots) change(changes, g.slot, [g.code], []);
-            for (const g of target.groups) if (codes.has(g.code) && !g.protected) change(changes, g.slot, [g.code], [[g.code, (source.outputEncoding || source.encoding) === 'utf-8' && valueType(g.code) === 'string' ? decodedName(g.value) : g.value]]);
+            for (const g of target.groups) if (codes.has(g.code) && !g.protected && (record.type !== 'MTEXT' || g.slot !== entitySlot)) change(changes, g.slot, [g.code], [[g.code, (source.outputEncoding || source.encoding) === 'utf-8' && valueType(g.code) === 'string' ? decodedName(g.value) : g.value]]);
         }
         return changes.size ? patchRecord(record, changes, source) : source.raw.subarray(record.start, record.end);
     }

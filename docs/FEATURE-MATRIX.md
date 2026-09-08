@@ -9,7 +9,7 @@ This matrix describes implementation boundaries, not certification of AutoCAD eq
 | Native solids | Optional local OpenCascade B-rep worker; primitives, profiles, Booleans, edges, slicing, single-face thickening, mass properties and STEP/BREP | ACIS/SAT/SAB translation, persistent topological naming and additional surface operations |
 | Constraints | Native planar geometric/dimensional solver with named parameters and rollback | Spatial sketch and assembly constraints |
 | Configurable blocks | Native typed parameters, expressions, lookup, visibility, flip, move/stretch/rotate/scale and rectangular arrays | Autodesk proprietary action-graph evaluation and native DWG dynamic-block compatibility |
-| Text | Local SHX/SHP and browser outline fonts, styles, width, slant and writing flags | Rich MTEXT composition, Big Fonts and complete font/layout equivalence |
+| Text | Local SHX/SHP and browser outline fonts; native rich MTEXT with scopes, fractions, paragraphs, Unicode bidi runs, masks and native columns | Linked-column DXF, general fields, vertical MTEXT, Big Fonts and complete font/layout equivalence |
 | Source files | Original ASCII/binary DXF archives, byte-identical original recovery, guarded compatible record edits and optional local DWG conversion | Unrestricted DWG editing, opaque-object regeneration and complete application-specific data fidelity |
 
 ## Runtime boundaries

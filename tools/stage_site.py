@@ -22,7 +22,7 @@ def main() -> None:
     OUT.mkdir()
     for name in ('index.html', 'Kestrel-CAD.html', 'README.md', 'VERIFICATION.md', 'LICENSE', '.nojekyll', 'build-info.json'):
         shutil.copy2(ROOT / name, OUT / name)
-    for name in ('src', 'examples', 'previews', 'docs'):
+    for name in ('src', 'examples', 'previews', 'docs', 'third_party'):
         shutil.copytree(ROOT / name, OUT / name)
     (OUT / 'tests').mkdir()
     for name in ('webgpu.html', 'gpu.test.js'):

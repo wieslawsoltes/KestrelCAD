@@ -18,6 +18,10 @@ Open `http://localhost:8000/`. Windows users can double-click `start.bat`; macOS
 
 WebGPU is selected only if its adapter and pipelines initialize. Otherwise Canvas compatibility rendering is used. The status bar identifies the active renderer. No hardware GPU frame-rate claim has been verified.
 
+## Rich multiline annotations
+
+Use **MTEXT** to create a native rich annotation, **MTEXTEDIT** or double-click to edit, and **MTEXTDEMO** for the working multilingual example. Raw formatting, fractions, paragraphs, masks, native columns and bidirectional runs persist through project saves and undo. Single-column DXF remains genuine MTEXT; unsafe converted column/shear exports reject explicitly. See [MTEXT commands and boundaries](docs/MTEXT.md).
+
 ## Everyday drafting
 
 The original editor supports lines, polylines, rectangles, polygons, circles, arcs, ellipses, control-point splines, text, aligned dimensions and hatches. Modify with move/copy/rotate/scale/mirror/offset, line trim/extend, two-line fillet/chamfer, arrays, join/explode, groups and property editing. There are editable architectural and mechanical examples.
