@@ -35,7 +35,7 @@
     function install(app) {
         if (!app || typeof app.run !== 'function' || app.__productivityInstalled) return !!app?.__productivityInstalled;
         const previous = app.run;
-        app.run = function (id, ...args) {
+        app.run = async function (id, ...args) {
             id = aliases.get(String(id).toUpperCase()) || id;
             if (!ids.has(id)) return previous.call(this, id, ...args);
             try {return execute(this, id);} catch (error) {this.toast(error.message); return false;}
