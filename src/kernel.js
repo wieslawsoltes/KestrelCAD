@@ -66,12 +66,30 @@
     }
     function decode(s){const text=atob(s),out=new Uint8Array(text.length);for(let i=0;i<out.length;i++)out[i]=text.charCodeAt(i);return out;}
     function encode(bytes){let s='';for(let i=0;i<bytes.length;i+=32768)s+=String.fromCharCode(...bytes.subarray(i,i+32768));return btoa(s);}
+    function appearance(e){
+        const properties={};
+        for(const key of ['layer','color','linetype','lineweight','opacity','group'])
+            if(e && e[key]!==undefined)properties[key]=K.clone(e[key]);
+        return properties;
+    }
     async function operate(doc,op,entities,params={},replace=true){
         const revision=doc.revision,ids=entities.map(e=>e.id);
-        if(entities.some(e=>!doc.editable(e)))throw Error('The selected body is hidden or on a locked layer.');
+        if(!entities.length || entities.some(e=>!doc.byId.has(e.id)||!doc.editable(e)))throw Error('Select current editable native bodies.');
         const result=await request(op,entities.map(input),params);
         if(doc.revision!==revision)throw Error('Drawing changed while the kernel was working. No stale result was applied; retry the operation.');
-        let added;doc.transaction('Native '+op,()=>{if(replace)doc.remove(ids);added=doc.add(body(result));doc.selection=new Set([added.id]);});return added;
+        // Validate every output before deleting any input. A failed result never partially slices a drawing.
+        const outputs=result.bodies || [result];
+        if(!Array.isArray(outputs)||!outputs.length||outputs.length>64)throw Error('Invalid multi-body kernel response.');
+        const prepared=outputs.map(value=>{
+            const index=value.sourceIndex??0;
+            if(!Number.isInteger(index)||index<0||index>=entities.length)throw Error('Invalid kernel source index.');
+            return {...body(value),...appearance(entities[index])};
+        });
+        let added=[];doc.transaction('Native '+op,()=>{
+            if(replace)doc.remove(ids);
+            added=prepared.map(e=>doc.add(e));doc.selection=new Set(added.map(e=>e.id));
+        });
+        return result.bodies?added:added[0];
     }
-    K.Kernel={hashMesh,validate,body,input,profile,request,encode,decode,operate};
+    K.Kernel={hashMesh,validate,body,input,profile,request,encode,decode,operate,appearance};
 })(typeof window!=='undefined'?window:globalThis);
