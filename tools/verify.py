@@ -74,7 +74,8 @@ def main() -> None:
                                              ('parametric-sketch.png', 'kestrel-parametric.png'),
                                              ('dynamic-blocks.png', 'kestrel-dynamic-blocks.png'),
                                              ('font-styles.png', 'kestrel-font-styles.png'),
-                                             ('mtext-composition.png', 'kestrel-mtext.png')):
+                                             ('mtext-composition.png', 'kestrel-mtext.png'),
+                                             ('spatial-assembly.png', 'kestrel-spatial-assembly.png')):
                 if (out / source_name).exists():
                     shutil.copy2(out / source_name, ROOT / 'previews' / target_name)
         if fingerprint(ROOT) != source:
