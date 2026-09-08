@@ -15,7 +15,7 @@ function parse(text,base={}){
  if(typeof text!=='string'||text.length>LIMITS.characters)throw Error('MTEXT content limit: '+LIMITS.characters+' characters.');
  const paragraphs=[],warnings=new Set(),stack=[];let paragraph={...defaultParagraph(),...(base.paragraph||{})},style={height:base.height||1,widthFactor:base.widthFactor??1,oblique:base.oblique||0,tracking:1,font:base.font||'',bold:false,italic:false,underline:false,overline:false,strike:false,alignment:0},items=[],buffer='',columnBreak=false,total=0;
  const emit=(kind,value)=>{if(++total>LIMITS.items)throw Error('MTEXT item limit exceeded.');items.push({kind,...value,style:{...style}});};
- const flush=()=>{if(buffer){emit('text',{text:buffer.replace(/%%d/gi,'°').replace(/%%p/gi,'±').replace(/%%c/gi,'⌀')});buffer='';}};
+ const flush=()=>{if(buffer){emit('text',{text:buffer});buffer='';}};
  const finish=()=>{flush();paragraphs.push({...copy(paragraph),items,columnBreak});items=[];columnBreak=false;};
  const setting=(cmd,arg)=>{
   const value=Number(arg.replace(/x$/i,'')),relative=/x$/i.test(arg);
@@ -39,6 +39,7 @@ function parse(text,base={}){
   if(ch==='{'||ch==='}'){flush();if(ch==='{'){if(stack.length>=LIMITS.depth)throw Error('MTEXT formatting nesting limit.');stack.push({style:{...style},paragraph:copy(paragraph)});}else if(stack.length){const saved=stack.pop();style=saved.style;paragraph=saved.paragraph;}else warnings.add('Unmatched closing formatting brace.');continue;}
   if(ch==='\n'||ch==='\r'){if(ch==='\r'&&text[i]==='\n')i++;finish();continue;}
   if(ch==='%'&&text[i]==='<'){flush();const end=text.indexOf('>%',i+1);if(end>=0){buffer='%'+text.slice(i,end+2);i=end+2;flush();warnings.add('Fields are retained as literal content; no external expression is executed.');continue;}}
+  if(ch==='%'&&text[i]==='%'&&/[dpc]/i.test(text[i+1]||'')){buffer+=({d:'°',p:'±',c:'⌀'})[text[i+1].toLowerCase()];i+=2;continue;}
   if(ch==='\t'){flush();emit('tab',{});continue;}
   if(ch!=='\\'){buffer+=ch;continue;}
   if(i===text.length){buffer+='\\';break;}const cmd=text[i++];
